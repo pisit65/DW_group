@@ -1,0 +1,8 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # Native
+    environment:
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
