@@ -1,0 +1,31 @@
+Date,ProductID,ProductName,Category,Brand,CustomerID,CustomerName,Gender,Region,StoreID,StoreName,StoreCity,Quantity,UnitPrice,Discount,SalesAmount,Profit
+2024-02-21,P003,Shoes,Fashion,Nike,C004,Diana,Female,Phuket,S002,Maya,Chiang Mai,4,14355,0.1,51678.0,12816.78
+2024-02-14,P001,Laptop,Electronics,Dell,C005,Ethan,Male,Ubon Ratchathani,S004,Jungceylon,Phuket,2,2892,0.05,5494.8,1300.79
+2024-03-01,P004,Backpack,Fashion,Adidas,C001,Alice,Female,Bangkok,S003,Terminal21,Khon Kaen,3,22822,0.1,61619.4,7240.33
+2024-02-27,P001,Laptop,Electronics,Dell,C001,Alice,Female,Bangkok,S001,CentralWorld,Bangkok,5,4723,0.1,21253.5,2224.44
+2024-01-21,P002,Smartphone,Electronics,Samsung,C003,Charlie,Male,Khon Kaen,S003,Terminal21,Khon Kaen,4,25503,0.05,96911.4,25937.67
+2024-01-09,P001,Laptop,Electronics,Dell,C005,Ethan,Male,Ubon Ratchathani,S001,CentralWorld,Bangkok,2,22869,0.1,41164.2,11500.37
+2024-02-23,P002,Smartphone,Electronics,Samsung,C003,Charlie,Male,Khon Kaen,S003,Terminal21,Khon Kaen,3,10415,0.05,29682.75,8410.5
+2024-01-14,P001,Laptop,Electronics,Dell,C005,Ethan,Male,Ubon Ratchathani,S005,BigC,Ubon Ratchathani,3,3722,0.15,9491.1,1613.06
+2024-02-04,P004,Backpack,Fashion,Adidas,C003,Charlie,Male,Khon Kaen,S003,Terminal21,Khon Kaen,3,27868,0.15,71063.4,20282.94
+2024-01-30,P002,Smartphone,Electronics,Samsung,C003,Charlie,Male,Khon Kaen,S004,Jungceylon,Phuket,5,18483,0.0,92415.0,25662.61
+2024-02-19,P001,Laptop,Electronics,Dell,C004,Diana,Female,Phuket,S003,Terminal21,Khon Kaen,1,5531,0.1,4977.9,1425.01
+2024-02-26,P005,Headphones,Electronics,Sony,C002,Bob,Male,Chiang Mai,S005,BigC,Ubon Ratchathani,5,17122,0.0,85610.0,20371.87
+2024-02-15,P003,Shoes,Fashion,Nike,C003,Charlie,Male,Khon Kaen,S002,Maya,Chiang Mai,5,9547,0.05,45348.25,12057.08
+2024-02-02,P001,Laptop,Electronics,Dell,C003,Charlie,Male,Khon Kaen,S001,CentralWorld,Bangkok,3,14637,0.05,41715.45,4684.78
+2024-01-07,P004,Backpack,Fashion,Adidas,C002,Bob,Male,Chiang Mai,S001,CentralWorld,Bangkok,1,11868,0.15,10087.8,2120.25
+2024-01-13,P003,Shoes,Fashion,Nike,C003,Charlie,Male,Khon Kaen,S003,Terminal21,Khon Kaen,3,24993,0.1,67481.1,12843.15
+2024-02-07,P002,Smartphone,Electronics,Samsung,C004,Diana,Female,Phuket,S005,BigC,Ubon Ratchathani,4,24307,0.05,92366.6,16506.65
+2024-02-24,P003,Shoes,Fashion,Nike,C003,Charlie,Male,Khon Kaen,S004,Jungceylon,Phuket,2,23198,0.1,41756.4,6258.34
+2024-01-03,P004,Backpack,Fashion,Adidas,C002,Bob,Male,Chiang Mai,S004,Jungceylon,Phuket,5,2884,0.05,13699.0,4068.86
+2024-01-21,P002,Smartphone,Electronics,Samsung,C001,Alice,Female,Bangkok,S002,Maya,Chiang Mai,1,2795,0.05,2655.25,328.0
+2024-01-29,P005,Headphones,Electronics,Sony,C004,Diana,Female,Phuket,S002,Maya,Chiang Mai,4,19027,0.05,72302.6,17250.88
+2024-02-01,P001,Laptop,Electronics,Dell,C001,Alice,Female,Bangkok,S002,Maya,Chiang Mai,2,9496,0.1,17092.8,1750.19
+2024-01-19,P005,Headphones,Electronics,Sony,C004,Diana,Female,Phuket,S001,CentralWorld,Bangkok,4,25377,0.1,91357.2,10365.42
+2024-02-14,P003,Shoes,Fashion,Nike,C003,Charlie,Male,Khon Kaen,S002,Maya,Chiang Mai,4,11192,0.05,42529.6,11932.31
+2024-02-19,P001,Laptop,Electronics,Dell,C001,Alice,Female,Bangkok,S005,BigC,Ubon Ratchathani,2,8792,0.0,17584.0,4930.78
+2024-02-15,P001,Laptop,Electronics,Dell,C002,Bob,Male,Chiang Mai,S001,CentralWorld,Bangkok,3,15429,0.0,46287.0,6028.79
+2024-02-01,P004,Backpack,Fashion,Adidas,C003,Charlie,Male,Khon Kaen,S005,BigC,Ubon Ratchathani,2,24725,0.15,42032.5,11165.29
+2024-02-07,P003,Shoes,Fashion,Nike,C002,Bob,Male,Chiang Mai,S002,Maya,Chiang Mai,2,7195,0.1,12951.0,2787.28
+2024-02-06,P004,Backpack,Fashion,Adidas,C003,Charlie,Male,Khon Kaen,S001,CentralWorld,Bangkok,5,16919,0.15,71905.75,12814.49
+2024-01-25,P001,Laptop,Electronics,Dell,C002,Bob,Male,Chiang Mai,S003,Terminal21,Khon Kaen,4,3445,0.15,11713.0,1235.55

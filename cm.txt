@@ -1,0 +1,155 @@
+docker exec -it clickhouse_db bash
+
+docker exec -it clickhouse_db clickhouse-client -u default --password 2546
+
+clickhouse-client
+
+
+CREATE TABLE IF NOT EXISTS sales (
+    id UInt32,
+    product String,
+    price Float32,
+    quantity UInt32,
+    date Date
+) ENGINE = MergeTree()
+ORDER BY id;
+
+
+# ปิดและลบ container และ volumes เก่า
+docker-compose down -v
+
+# build และ run ใหม่
+docker-compose up --build -d
+
+# เช็กว่า backend container up และ network ถูกต้อง
+docker network inspect mynet
+
+# ดู log backend
+docker logs -f express_api
+
+
+
+CREATE TABLE IF NOT EXISTS sales (
+    id SERIAL PRIMARY KEY,
+    product TEXT,
+    price REAL,
+    quantity INT,
+    date DATE
+);
+
+
+INSERT INTO sales (product, price, quantity, date) VALUES
+('Laptop', 1500.50, 2, '2025-09-01'),
+('Phone', 800.00, 5, '2025-09-02'),
+('Tablet', 600.00, 3, '2025-09-03'),
+('Headphones', 120.75, 10, '2025-09-04');
+
+
+docker exec -it postgres bash
+
+psql -U dicek -d mydb
+
+
+COPY sales_data(date, product_id, product_name, category, brand, customer_id, customer_name, gender, region, store_id, store_name, store_city, quantity, unit_price, discount, sales_amount, profit)
+FROM '/sales_dataset_large.csv'
+DELIMITER ','
+CSV HEADER;
+
+#ย้ายไฟล์เข้า docker
+PS D:\Project-DW\Project-DW> docker cp D:\Project-DW\Project-DW\sales_dataset_large.csv postgres:/sales_dataset_large.csv
+
+#PSQL
+CREATE TABLE sales_data (
+    date DATE,
+    product_id VARCHAR(20),
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    brand VARCHAR(50),
+    customer_id VARCHAR(20),
+    customer_name VARCHAR(100),
+    gender VARCHAR(10),
+    region VARCHAR(50),
+    store_id VARCHAR(20),
+    store_name VARCHAR(100),
+    store_city VARCHAR(50),
+    quantity INT,
+    unit_price NUMERIC(12,2),
+    discount NUMERIC(5,2),
+    sales_amount NUMERIC(12,2),
+    profit NUMERIC(12,2)
+);
+
+#click_house
+CREATE TABLE IF NOT EXISTS sales_data (
+    date Date,
+    product_id String,
+    product_name String,
+    category String,
+    brand String,
+    customer_id String,
+    customer_name String,
+    gender String,
+    region String,
+    store_id String,
+    store_name String,
+    store_city String,
+    quantity Int32,
+    unit_price Decimal(12,2),
+    discount Decimal(5,2),
+    sales_amount Decimal(12,2),
+    profit Decimal(12,2)
+)
+ENGINE = MergeTree()
+ORDER BY date;
+
+
+mydb=# \d sales_data
+
+date          | date                   |           |          |
+ product_id    | character varying(20)  |           |          |
+ product_name  | character varying(100) |           |          |
+ category      | character varying(50)  |           |          |
+ brand         | character varying(50)  |           |          |
+ customer_id   | character varying(20)  |           |          |
+ customer_name | character varying(100) |           |          |
+ gender        | character varying(10)  |           |          |
+ region        | character varying(50)  |           |          |
+ store_id      | character varying(20)  |           |          |
+ store_name    | character varying(100) |           |          |
+ store_city    | character varying(50)  |           |          |
+ quantity      | integer                |           |          |
+ unit_price    | numeric(12,2)          |           |          |
+ discount      | numeric(5,2)           |           |          |
+ sales_amount  | numeric(12,2)          |           |          |
+ profit        | numeric(12,2)          |           |          |
+
+
+ 4ce5338bc65b :) DESCRIBE TABLE sales_data
+
+DESCRIBE TABLE sales_data
+
+Query id: 7df85452-838d-4380-95dc-1e6e0a621200
+
+    ┌─name──────────┬─type────┬─default_type─┬─default_expression─┬─comment─┬─codec_expression─┬─ttl_expression─┐                                                
+ 1. │ date          │ Date    │              │                    │         │                  │                │
+ 2. │ product_id    │ String  │              │                    │         │                  │                │
+ 3. │ product_name  │ String  │              │                    │         │                  │                │
+ 4. │ category      │ String  │              │                    │         │                  │                │
+ 5. │ brand         │ String  │              │                    │         │                  │                │
+ 6. │ customer_id   │ String  │              │                    │         │                  │                │
+ 7. │ customer_name │ String  │              │                    │         │                  │                │
+ 8. │ gender        │ String  │              │                    │         │                  │                │
+ 9. │ region        │ String  │              │                    │         │                  │                │
+10. │ store_id      │ String  │              │                    │         │                  │                │
+11. │ store_name    │ String  │              │                    │         │                  │                │
+12. │ store_city    │ String  │              │                    │         │                  │                │
+13. │ quantity      │ Int32   │              │                    │         │                  │                │
+14. │ unit_price    │ Float64 │              │                    │         │                  │                │
+15. │ discount      │ Float64 │              │                    │         │                  │                │
+16. │ sales_amount  │ Float64 │              │                    │         │                  │                │
+17. │ profit        │ Float64 │              │                    │         │                  │                │
+    └───────────────┴─────────┴──────────────┴────────────────────┴─────────┴──────────────────┴────────────────┘
+
+17 rows in set. Elapsed: 0.002 sec.
+
+4ce5338bc65b :)
