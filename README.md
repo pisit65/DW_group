@@ -1,9 +1,5 @@
 # eCommerce-dataset-samples
 
-## A collection of sample e-commerce datasets, each containing over 1,000 records.
-
-![E-commerce dataset header](https://github.com/luminati-io/ecommerce-dataset-samples/blob/main/eCommerce-datasets.PNG)
-
 E-commerce dataset samples featuring thousands of records in total. All datasets were extracted using the **Bright Data API**.
 
 ## Some of the data points include:
