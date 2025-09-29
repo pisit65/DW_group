@@ -52,6 +52,7 @@ services:
       - clickhouse
     networks:
       - mynet
+
   frontend:
     build: ./frontend
     container_name: react_ui
@@ -61,9 +62,22 @@ services:
       - backend
     networks:
       - mynet
+
+  # # Data generator service
+  # datagen:
+  #   build: ./datagen
+  #   container_name: datagen
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - mynet
+  #   # This service will run once and exit
+  #   restart: "no"
+
 volumes:
   pgdata:
   chdata:
+
 networks:
   mynet:
     driver: bridge

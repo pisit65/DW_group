@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Pie,PieChart,BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-
+import graphIcon from "../assets/graph-svgrepo-com.svg";
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
@@ -168,9 +168,9 @@ const Chat = () => {
   };
 
   return (
-    <div className="p-5  mx-auto flex flex-col min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 w-full p-6 m-5">
       <div className="flex flex-row items-center mb-5">
-        <div>
+        <div className="w-1/2">
           <h2 className="text-2xl font-bold mb-4">Data Warehouse Chat Interface</h2>
 
           {/* Status */}
@@ -204,21 +204,23 @@ const Chat = () => {
           </div>
 
           {/* Chat Box */}
-          <div className="flex-1 flex flex-col min-h-[500px] bg-gray-100 border rounded p-3 mb-3 overflow-y-auto">
+          {/* Chat Box */}
+          <div
+            className="flex-1 flex flex-col min-h-[500px] max-h-[500px] max-w-full bg-gray-100 border rounded p-3
+                      overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+          >
             {chatHistory.map((chat, idx) => (
               <div
                 key={idx}
-                className={`mb-2 p-2 rounded max-w-[80%] ${
-                  chat.sender === "user"
-                    ? "bg-blue-500 text-white self-end"
-                    : "bg-gray-300 text-black self-start"
-                }`}
+                className={`mb-2 p-2 rounded max-w-[80%] break-words
+                            ${chat.sender === "user" ? "bg-blue-500 text-white self-end" : "bg-gray-300 text-black self-start"}`}
               >
                 <div className="whitespace-pre-wrap">{chat.text}</div>
               </div>
             ))}
             <div ref={chatEndRef}></div>
           </div>
+
           <div className="p-5 bg-white border rounded mb-3">
             {/* Input */}
             <div className="flex mb-3">
@@ -275,43 +277,47 @@ const Chat = () => {
           </div>
         </div>
 
-        <div className="">
+        <div className="w-1/2 pl-5">
           {/* Analysis Results */}
-          {analysisData && (
+          {analysisData ? (
             <div className="p-3 bg-white min-h-[450px] border rounded overflow-x-auto">
               <h3 className="font-semibold mb-2">Sales Summary</h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="p-2 bg-blue-50 rounded">
                   <p className="text-sm text-gray-600">Total Sales</p>
-                  <p className="text-xl font-bold text-blue-600">${analysisData.totalSales.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    ${analysisData.totalSales.toFixed(2)}
+                  </p>
                 </div>
                 <div className="p-2 bg-green-50 rounded">
                   <p className="text-sm text-gray-600">Total Profit</p>
-                  <p className="text-xl font-bold text-green-600">${analysisData.totalProfit.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-green-600">
+                    ${analysisData.totalProfit.toFixed(2)}
+                  </p>
                 </div>
               </div>
 
+              {/* Sales by Category */}
               <div className="my-4 p-4 bg-white rounded border">
                 <h4 className="font-semibold mb-2">Sales by Category</h4>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={analysisData.salesByCategory}
-                        dataKey="sales_amount"
-                        nameKey="name"
-                        cx="50%"      // center X
-                        cy="50%"      // center Y
-                        outerRadius={90} // ขนาดวงกลม
-                        fill="#3b82f6"
-                        label // แสดง label
-                      />
-                      <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-                    </PieChart>
-                  </ResponsiveContainer>
-
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={analysisData.salesByCategory}
+                      dataKey="sales_amount"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      fill="#3b82f6"
+                      label
+                    />
+                    <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
 
-
+              {/* Sales by Brand */}
               <div className="my-4">
                 <h4 className="font-semibold mb-2">Sales by Brand</h4>
                 <ResponsiveContainer width="100%" height={200}>
@@ -325,6 +331,7 @@ const Chat = () => {
                 </ResponsiveContainer>
               </div>
 
+              {/* Sales by Region */}
               <div className="my-4">
                 <h4 className="font-semibold mb-2">Sales by Region</h4>
                 <ResponsiveContainer width="100%" height={200}>
@@ -338,8 +345,13 @@ const Chat = () => {
                 </ResponsiveContainer>
               </div>
             </div>
+          ) : (
+            <div className="p-3 bg-white min-h-[450px] border rounded flex items-center justify-center text-gray-400">
+              No analysis data yet. Click "Analyze Sales Data" to generate.
+            </div>
           )}
         </div>
+
       </div>
     </div>
   );

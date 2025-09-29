@@ -5,11 +5,24 @@ const cors = require("cors");
 const { Pool } = require("pg");
 const { createClient } = require("@clickhouse/client");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { Server } = require("socket.io");
+const http = require("http");
+const { faker } = require("@faker-js/faker");
+const cron = require('node-cron');
 
 const app = express();
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: ["http://localhost:3000","http://localhost:5000", "http://192.168.1.155:51251", "http://192.168.1.155:51251","http://localhost:51251"] }
+});
+
+
 app.use(cors({
-  origin: ["http://localhost:3000"] // React dev server
+  origin: ["http://localhost:3000","http://localhost:5000", "http://192.168.1.155:51251", "http://192.168.1.155:51251","http://localhost:51251"] // React dev server
 }));
+
+
 app.use(express.json());
 const PORT = process.env.PORT || 3001;
 
@@ -31,6 +44,94 @@ const chClient = createClient({
   database: "default",
 });
 
+
+
+
+// ตัวเลือก
+const categories = ["Electronics", "Clothing", "Food", "Toys", "Books"];
+const brands = ["BrandA", "BrandB", "BrandC", "BrandD"];
+const regions = ["North", "South", "East", "West"];
+const stores = [
+  { id: "S001", name: "Store1", city: "Bangkok" },
+  { id: "S002", name: "Store2", city: "Chiang Mai" },
+  { id: "S003", name: "Store3", city: "Phuket" }
+];
+
+// const stores = ["Bangkok", "Chiang Mai", "Phuket", "New York"];
+
+function generateSalesRecord(id) {
+  const productId = faker.helpers.replaceSymbols("?????").toUpperCase();
+  const customerId = faker.helpers.replaceSymbols("?????").toUpperCase();
+
+  return {
+    id,
+    date: faker.date.recent(90).toISOString().split("T")[0], // ✅ ใช้แค่เลข ไม่ใช่ { days: 90 }
+    product_id: productId,
+    product_name: faker.commerce.productName(),
+    category: faker.commerce.department(),
+    brand: faker.company.name(),
+    customer_id: customerId,
+    customer_name: faker.name.findName(), // faker@7 ยังใช้ .name.findName()
+    gender: faker.helpers.arrayElement(["Male", "Female"]),
+    // region: faker.address.state(),        // faker@7 ใช้ address.state()
+    region: faker.helpers.arrayElement(regions),
+    store_id: faker.helpers.replaceSymbols("?????").toUpperCase(),
+    store_name: faker.company.companyName(), // faker@7
+    // store_city: faker.address.city(),
+    store_city: faker.helpers.arrayElement(stores.city),
+    quantity: faker.datatype.number({ min: 1, max: 20 }),
+    unit_price: Number(faker.commerce.price(10, 500, 2)),
+    discount: faker.datatype.float({ min: 0, max: 0.3, precision: 0.01 }),
+    sales_amount: 0,
+    profit: 0,
+  };
+}
+
+
+
+
+// endpoint gen + insert
+app.get("/gendata", async (req, res) => {
+  const count = parseInt(req.query.count) || 5;
+  const records = Array.from({ length: count }, (_, i) => {
+    const rec = generateSalesRecord(i + 1);
+
+    // คำนวณเพิ่ม
+    rec.sales_amount = Number((rec.quantity * rec.unit_price * (1 - rec.discount)).toFixed(2));
+    rec.profit = Number((rec.sales_amount * 0.8).toFixed(2)); // สมมติ profit 20%
+
+    return rec;
+  });
+
+  try {
+    for (const r of records) {
+      await pgPool.query(
+        `INSERT INTO public.sales_data (
+          date, product_id, product_name, category, brand,
+          customer_id, customer_name, gender, region,
+          store_id, store_name, store_city,
+          quantity, unit_price, discount, sales_amount, profit
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        [
+          r.date, r.product_id, r.product_name, r.category, r.brand,
+          r.customer_id, r.customer_name, r.gender, r.region,
+          r.store_id, r.store_name, r.store_city,
+          r.quantity, r.unit_price, r.discount, r.sales_amount, r.profit
+        ]
+      );
+    }
+
+    res.json({ success: true, inserted: records.length, records });
+  } catch (err) {
+    console.error("Insert error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+
+
+
 // Function: migrate PostgreSQL → ClickHouse
 async function migrateSales(batchSize = 1000) {
   let offset = 0;
@@ -39,6 +140,7 @@ async function migrateSales(batchSize = 1000) {
     const pgResult = await pgPool.query(
       `SELECT * FROM sales_data ORDER BY product_id LIMIT ${batchSize} OFFSET ${offset}`
     );
+
 
     if (pgResult.rows.length === 0) break;
 
@@ -55,7 +157,7 @@ async function migrateSales(batchSize = 1000) {
       }));
 
       await chClient.insert({
-        table: "sales_data",
+        table: "sales_data_ch",
         values: transformedData,
         format: "JSONEachRow",
       }); 
@@ -94,7 +196,7 @@ app.get("/sales-sample", async (req, res) => {
   try {
     const result = await chClient.query({
       // query: "SELECT * FROM sales LIMIT 2500",
-      query: "SELECT * FROM sales_data LIMIT 2500",
+      query: "SELECT * FROM sales_data_ch LIMIT 2500",
       format: "JSONEachRow",
     });
 
@@ -105,6 +207,217 @@ app.get("/sales-sample", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+
+// ======= ฟังก์ชัน Upsert Daily Summary =======
+// async function updateDailySummary() {
+//   const query = `
+//     INSERT INTO sales_summary_daily (date, total_qty, total_sales, total_profit, avg_discount)
+//     SELECT
+//       date,
+//       SUM(quantity) AS total_qty,
+//       SUM(sales_amount) AS total_sales,
+//       SUM(profit) AS total_profit,
+//       AVG(discount) AS avg_discount
+//     FROM sales_data_pg
+//     GROUP BY date
+//     ON CONFLICT (date) DO UPDATE
+//     SET
+//       total_qty = EXCLUDED.total_qty,
+//       total_sales = EXCLUDED.total_sales,
+//       total_profit = EXCLUDED.total_profit,
+//       avg_discount = EXCLUDED.avg_discount
+//   `;
+//   await chClient.command({ query });
+// }
+
+
+async function updateDailySummary() {
+  // ลบข้อมูลเก่าวันนี้ออกก่อน แล้วค่อย insert ใหม่
+  await chClient.command({
+    query: `ALTER TABLE sales_summary_daily DELETE WHERE date = today()`
+  });
+
+  await chClient.command({
+    query: `
+      INSERT INTO sales_summary_daily
+      SELECT
+        date,
+        SUM(quantity) AS total_qty,
+        SUM(sales_amount) AS total_sales,
+        SUM(profit) AS total_profit,
+        AVG(discount) AS avg_discount
+      FROM sales_data_ch
+      GROUP BY date
+    `
+  });
+}
+
+
+
+// ======= Middleware เรียกอัปเดตทุกครั้งก่อน endpoint =======
+async function dailySummaryMiddleware(req, res, next) {
+  try {
+    await updateDailySummary();
+    next();
+  } catch (err) {
+    console.error("Error updating daily summary:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// ================== Endpoints ==================
+app.get("/sales-trend", dailySummaryMiddleware, async (req, res) => {
+  try {
+    const result = await chClient.query({
+      query: `
+        SELECT date, SUM(sales_amount) as sales_amount, SUM(profit) as profit, SUM(quantity) as quantity, AVG(discount) as discount
+        FROM sales_data_pg
+        GROUP BY date
+        ORDER BY date DESC
+        LIMIT 7
+      `,
+      format: "JSONEachRow"
+    });
+    const data = await result.json();
+    res.json(data.reverse());
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Top Products
+app.get("/top-products", dailySummaryMiddleware, async (req, res) => {
+  try {
+    const result = await chClient.query({
+      query: `
+        SELECT product_name, SUM(sales_amount) as total_sales, SUM(quantity) as total_qty, SUM(profit) as profit
+        FROM sales_data_pg
+        GROUP BY product_name
+        ORDER BY total_sales DESC
+        LIMIT 10
+      `,
+      format: "JSONEachRow"
+    });
+    res.json(await result.json());
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Category Profit
+app.get("/category-profit", dailySummaryMiddleware, async (req, res) => {
+  try {
+    const result = await chClient.query({
+      query: `
+        SELECT category, SUM(profit) as total_profit, SUM(sales_amount) as total_sales
+        FROM sales_data_pg
+        GROUP BY category
+      `,
+      format: "JSONEachRow"
+    });
+    res.json(await result.json());
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Region Sales
+app.get("/region-sales", dailySummaryMiddleware, async (req, res) => {
+  try {
+    const result = await chClient.query({
+      query: `
+        SELECT region, store_city, SUM(sales_amount) as total_sales, COUNT(DISTINCT customer_id) as customers
+        FROM sales_data_pg
+        GROUP BY region, store_city
+      `,
+      format: "JSONEachRow"
+    });
+    res.json(await result.json());
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Customer Segment
+app.get("/customer-segment", dailySummaryMiddleware, async (req, res) => {
+  try {
+    const result = await chClient.query({
+      query: `
+        SELECT gender, COUNT(DISTINCT customer_id) as customers, SUM(sales_amount) as total_sales, AVG(sales_amount) as avg_order
+        FROM sales_data_pg
+        GROUP BY gender
+      `,
+      format: "JSONEachRow"
+    });
+    res.json(await result.json());
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+
+// Socket.IO
+io.on("connection", (socket) => {
+  console.log("✅ Client connected:", socket.id);
+
+  // ส่งข้อมูล sales ทันทีเมื่อ connect
+  sendSalesData(socket);
+
+  // disconnect
+  socket.on("disconnect", () => {
+    console.log("❌ Client disconnected:", socket.id);
+  });
+});
+
+// ฟังก์ชันดึงข้อมูลจาก ClickHouse แล้ว push ผ่าน socket
+async function sendSalesData(socket) {
+  try {
+    const result = await chClient.query({
+      query: "SELECT * FROM sales_data_ch ORDER BY id DESC LIMIT 5;",
+      format: "JSONEachRow",
+    });
+    const data = await result.json();
+    socket.emit("sales_update", data);
+  } catch (err) {
+    console.error("ClickHouse error:", err);
+  }
+}
+
+
+async function broadcastSales() {
+  try {
+    const [result1, result2] = await Promise.all([
+      chClient.query({ query: "SELECT * FROM sales_data_ch ORDER BY id DESC LIMIT 5;", format: "JSONEachRow" }),
+      chClient.query({ query: "SELECT * FROM sales_summary_daily ORDER BY date DESC LIMIT 5;", format: "JSONEachRow" })
+    ]);
+
+    const data1 = await result1.json();
+    const data2 = await result2.json();
+
+    io.emit("sales_update", data1);
+    io.emit("sales_day", data2);
+  } catch (err) {
+    console.error("Broadcast error:", err);
+  } finally {
+    setTimeout(broadcastSales, 5000); // เรียกตัวเองต่อ
+  }
+}
+
+// เริ่ม broadcast
+broadcastSales();
+
+
 
 // Initialize Gemini only when needed
 let gemini = null;
@@ -226,17 +539,6 @@ app.post("/chat", async (req, res) => {
 
 
 
-// app.get("/chat-test", (req, res) => {
-//   const hasApiKey = !!process.env.OPENAI_API_KEY;
-//   res.json({ 
-//     message: "Chat API is working! Use POST /chat with JSON { message }",
-//     openai_configured: hasApiKey,
-//     openai_key_length: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
-//     status: hasApiKey ? "ready" : "demo_mode",
-//     demo_mode: !hasApiKey
-//   });
-// });
-
 app.get("/chat-test", (req, res) => {
   res.json({
     message: "Chat API is working! Use POST /chat with JSON { message }",
@@ -316,11 +618,20 @@ app.get("/analytics", async (req, res) => {
 //   }
 // });
 
-app.listen(PORT, () => {
+// app.listen(PORT, () => {
+//   console.log(`Backend running on port ${PORT}`);
+//   console.log(`- Gemini configured: ${!!process.env.GOOGLE_API_KEY}`);
+//   console.log(`- OpenAI configured: ${!!process.env.OPENAI_API_KEY}`);
+//   if (!process.env.GOOGLE_API_KEY && !process.env.OPENAI_API_KEY) {
+//     console.log('Note: Running in DEMO mode. Add an API key to your .env file.');
+//   }
+// });
+
+server.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
   console.log(`- Gemini configured: ${!!process.env.GOOGLE_API_KEY}`);
   console.log(`- OpenAI configured: ${!!process.env.OPENAI_API_KEY}`);
   if (!process.env.GOOGLE_API_KEY && !process.env.OPENAI_API_KEY) {
-    console.log('Note: Running in DEMO mode. Add an API key to your .env file.');
+    console.log("Note: Running in DEMO mode. Add an API key to your .env file.");
   }
 });

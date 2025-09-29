@@ -1,7 +1,8 @@
 import { Routes, Route, NavLink } from "react-router-dom";
-import Test from "./pages/test";
+import Ddash from "./pages/ddash";
 import Home from "./pages/home";
 import Chat from "./pages/chat";
+import Genta from "./pages/genta";
 import { useState } from "react";
 
 function App() {
@@ -71,11 +72,13 @@ function App() {
 
       {/* Main Content */}
       {/* <main className="flex-1 container mx-auto"> */}
-      <main className="flex min-h-screen mx-auto">
+      <main className="flex flex-1 w-full min-h-screen items-start justify-start">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/test" element={<Test />} />
+          <Route path="/test" element={<Ddash />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/genta" element={<Genta />} />
         </Routes>
       </main>
     </div>
