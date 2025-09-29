@@ -32,7 +32,7 @@ This repository contains **sample datasets** from e-commerce transactions, featu
 ## 🐘 PostgreSQL Setup
 
 docker exec -it postgres psql -U dicek -d mydb
-
+```
 CREATE TABLE sales_data (
     id SERIAL PRIMARY KEY,
     date DATE,
@@ -53,7 +53,7 @@ CREATE TABLE sales_data (
     sales_amount NUMERIC(12,2),
     profit NUMERIC(12,2)
 );
-
+```
 ---
 
 ## ⚡ ClickHouse Setup
@@ -61,6 +61,7 @@ CREATE TABLE sales_data (
 docker exec -it clickhouse_db clickhouse-client -u default --password 2546
 
 -- Main Table
+```
 CREATE TABLE IF NOT EXISTS sales_data (
     date Date,
     product_id String,
@@ -82,8 +83,10 @@ CREATE TABLE IF NOT EXISTS sales_data (
 )
 ENGINE = MergeTree()
 ORDER BY date;
+```
 
 -- Foreign Table (Proxy to PostgreSQL)
+```
 CREATE TABLE sales_data_pg
 (
     id UInt64,
@@ -112,7 +115,7 @@ ENGINE = PostgreSQL(
     'dicek',
     '2546'
 );
-
+```
 ---
 
 ✅ This structure allows **efficient querying and analytics** across both PostgreSQL and ClickHouse.
