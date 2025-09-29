@@ -120,3 +120,9 @@ ENGINE = PostgreSQL(
 
 ✅ This structure allows **efficient querying and analytics** across both PostgreSQL and ClickHouse.
 It’s ideal for e-commerce **reporting, dashboarding, and analytics pipelines**.
+
+---
+
+```
+docker-compose up -build -d
+```
