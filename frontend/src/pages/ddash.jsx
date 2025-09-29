@@ -176,18 +176,18 @@
 
 
 
-import React, { useState, useMemo,useEffect } from 'react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, TrendingUp, ShoppingCart, Users, MapPin, Target, DollarSign, Award } from 'lucide-react';
-import axios from 'axios';
-const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [salesData, setSalesData] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
-  const [regionData, setRegionData] = useState([]);
-  const [customerData, setCustomerData] = useState([]);
-  const defaultColors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#14B8A6"];
+// import React, { useState, useMemo,useEffect } from 'react';
+// import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// import { Calendar, TrendingUp, ShoppingCart, Users, MapPin, Target, DollarSign, Award } from 'lucide-react';
+// import axios from 'axios';
+// const Dashboard = () => {
+//   const [activeTab, setActiveTab] = useState('overview');
+//   const [salesData, setSalesData] = useState([]);
+//   const [topProducts, setTopProducts] = useState([]);
+//   const [categoryData, setCategoryData] = useState([]);
+//   const [regionData, setRegionData] = useState([]);
+//   const [customerData, setCustomerData] = useState([]);
+//   const defaultColors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#14B8A6"];
 
   // const mockSalesData = [ { date: '2025-01-01', sales_amount: 125000, profit: 35000, quantity: 150, discount: 0.10 }, 
   //   { date: '2025-01-02', sales_amount: 98000, profit: 28000, quantity: 120, discount: 0.08 }, 
@@ -309,7 +309,18 @@ const Dashboard = () => {
 //       color: 'bg-orange-500'
 //     }
 //   ];
-
+import React, { useState, useMemo,useEffect } from 'react';
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Calendar, TrendingUp, ShoppingCart, Users, MapPin, Target, DollarSign, Award } from 'lucide-react';
+import axios from 'axios';
+const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [salesData, setSalesData] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [regionData, setRegionData] = useState([]);
+  const [customerData, setCustomerData] = useState([]);
+  const defaultColors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#14B8A6"];
   // hook โหลดข้อมูล
   useEffect(() => {
     axios.get("http://localhost:3001/sales-trend")
@@ -323,6 +334,9 @@ const Dashboard = () => {
 
     axios.get("http://localhost:3001/top-products")
       .then(res => setTopProducts(res.data))
+      .catch(err => console.error(err));
+    axios.get("http://localhost:3001/top-products")
+      .then(res => console.log(res.data))
       .catch(err => console.error(err));
 
     axios.get("http://localhost:3001/category-profit")
@@ -569,22 +583,15 @@ const Dashboard = () => {
             Top Products Performance
           </h2>
           <ResponsiveContainer width="100%" height={500}>
-            <BarChart data={topProducts} layout="horizontal">
+            <BarChart
+              data={topProducts}
+              layout="vertical" // <-- ใช้ vertical จะง่ายสำหรับ category ที่เป็นชื่อสินค้า
+              margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis 
-                type="number" 
-                stroke="#64748B"
-                fontSize={12}
-                tickFormatter={(value) => `${(value/1000)}K`}
-              />
-              <YAxis 
-                dataKey="product_name" 
-                type="category" 
-                stroke="#64748B"
-                fontSize={12}
-                width={150}
-              />
-              <Tooltip 
+              <XAxis type="number" stroke="#64748B" fontSize={12} tickFormatter={(value) => `฿${value.toLocaleString()}`} />
+              <YAxis type="category" dataKey="product_name" stroke="#64748B" fontSize={12} width={200} />
+              <Tooltip
                 formatter={(value, name) => [
                   name === 'total_sales' ? `฿${value.toLocaleString()}` : value,
                   name === 'total_sales' ? 'Sales' : name === 'total_qty' ? 'Quantity' : 'Profit'
@@ -599,6 +606,7 @@ const Dashboard = () => {
               <Bar dataKey="total_sales" fill="#3B82F6" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
+
         </div>
       )}
 
@@ -663,14 +671,14 @@ const Dashboard = () => {
       )} */}
 
       {activeTab === 'customers' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {/* Customer Demographics */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
               <Users className="w-5 h-5 text-purple-500" />
               Customer Demographics
             </h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {customerData.map((segment, index) => (
                 <div key={index} className="p-4 bg-slate-50 rounded-xl">
                   <div className="flex justify-between items-center mb-2">
@@ -689,7 +697,7 @@ const Dashboard = () => {
           {/* Regional Performance */}
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
             <h2 className="text-xl font-bold text-slate-800 mb-6">Regional Performance</h2>
-            <div className="grid grid-cols-3 gap-3 h-64 overflow-y-auto border rounded p-3">
+            <div className="grid grid-cols-3 gap-3 h-[400px] overflow-y-auto border rounded p-3">
               {regionData.map((region, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                   <div>

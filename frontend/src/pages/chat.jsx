@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Pie,PieChart,BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import graphIcon from "../assets/graph-svgrepo-com.svg";
+import ReactMarkdown from "react-markdown";
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
@@ -47,54 +48,65 @@ const Chat = () => {
   };
 
   // Fixed sendDataToChat function
-  const sendDataToChat = async (data, customMessage) => {
-    if (!data) {
-      setError("No analysis data to send.");
-      return;
-    }
+const sendDataToChat = async (data, customMessage) => {
+  if (!data) {
+    setError("No analysis data to send.");
+    return;
+  }
 
-    // Create a more concise summary
-    const summaryText = [
-      `Total Sales: $${data.totalSales.toFixed(2)}`,
-      `Total Profit: $${data.totalProfit.toFixed(2)}`,
-      `Top Categories: ${data.salesByCategory.slice(0, 3).map(c => `${c.name} ($${c.sales_amount.toFixed(2)})`).join(', ')}`,
-      `Top Brands: ${data.salesByBrand.slice(0, 3).map(b => `${b.name} ($${b.sales_amount.toFixed(2)})`).join(', ')}`,
-      `Regions: ${data.salesByRegion.map(r => `${r.name} ($${r.sales_amount.toFixed(2)})`).join(', ')}`
-    ].join('. ');
+  // จัดเรียงข้อมูลให้อ่านง่าย (Markdown-style)
+  const regionSummary = {};
+  data.salesByRegion.forEach(r => {
+    if (!regionSummary[r.name]) regionSummary[r.name] = 0;
+    regionSummary[r.name] += r.sales_amount;
+  });
 
-    const messageToSend = customMessage 
-      ? `${customMessage} Here is the data: ${summaryText}`
-      : `Please summarize this sales data: ${summaryText}`;
+  const summaryText = `
+**Overall Performance**
+- Total Sales: $${data.totalSales.toLocaleString(undefined, {minimumFractionDigits:2})}
+- Total Profit: $${data.totalProfit.toLocaleString(undefined, {minimumFractionDigits:2})}
 
-    if (!messageToSend.trim()) {
-      setError("Generated message is empty.");
-      return;
-    }
+**Top Categories**
+${data.salesByCategory.slice(0,3).map(c => `- ${c.name}: $${c.sales_amount.toLocaleString(undefined, {minimumFractionDigits:2})}`).join('\n')}
 
-    // Add user message to chat
-    setChatHistory(prev => [...prev, { sender: "user", text: messageToSend }]);
+**Top Brands**
+${data.salesByBrand.slice(0,3).map(b => `- ${b.name}: $${b.sales_amount.toLocaleString(undefined, {minimumFractionDigits:2})}`).join('\n')}
 
-    // Send to backend
-    setLoading(true);
-    setError("");
-    try {
-      const res = await axios.post("http://localhost:3001/chat", { 
-        message: messageToSend, 
-        mode: selectedMode 
-      });
-      
-      setChatHistory(prev => [...prev, { sender: "bot", text: res.data.reply }]);
-      setChatMode(res.data.mode || "unknown");
-      if (res.data.note) setError(res.data.note);
-    } catch (err) {
-      console.error("Chat request error:", err);
-      setError(err.response?.data?.error || "Failed to send message to AI");
-    } finally {
-      setLoading(false);
-    }
+**Sales by Region**
+${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(undefined, {minimumFractionDigits:2})}`).join('\n')}
+`;
 
-    setMessage(""); // Clear input
-  };
+  const messageToSend = customMessage 
+    ? `${customMessage}\nจากข้อมูลต่อไปนี้:\n${summaryText}` 
+    : `ช่วยสรุปข้อมูลโดยใช้ข้อมูลตัวนี้ให้หน่อย:\n${summaryText}`;
+
+  if (!messageToSend.trim()) {
+    setError("Generated message is empty.");
+    return;
+  }
+
+  // ส่งข้อความไป AI
+  setChatHistory(prev => [...prev, { sender: "user", text: messageToSend }]);
+  setLoading(true);
+  setError("");
+  try {
+    const res = await axios.post("http://localhost:3001/chat", { 
+      message: messageToSend, 
+      mode: selectedMode 
+    });
+    setChatHistory(prev => [...prev, { sender: "bot", text: res.data.reply }]);
+    setChatMode(res.data.mode || "unknown");
+    if (res.data.note) setError(res.data.note);
+  } catch (err) {
+    console.error("Chat request error:", err);
+    setError(err.response?.data?.error || "Failed to send message to AI");
+  } finally {
+    setLoading(false);
+  }
+
+  setMessage("");
+};
+
 
   const sendMessage = () => {
     if (!message.trim()) return;
@@ -135,37 +147,113 @@ const Chat = () => {
   const getModeText = (mode) => modeTexts[mode] || modeTexts.default;
 
   // ---------------- Data Analysis ----------------
+  // const analyzeData = async () => {
+  //   setLoading(true);
+  //   setError("");
+  //   try {
+  //     const res = await axios.get("http://localhost:3001/sales-sample");
+  //     const data = res.data;
+
+  //     // Aggregate sales by category, brand, region
+  //     const aggregate = (key) =>
+  //       Object.values(
+  //         data.reduce((acc, row) => {
+  //           if (!acc[row[key]]) acc[row[key]] = { name: row[key], sales_amount: 0 };
+  //           acc[row[key]].sales_amount += row.sales_amount;
+  //           return acc;
+  //         }, {})
+  //       ).sort((a, b) => b.sales_amount - a.sales_amount); // Sort by highest sales
+
+  //     setAnalysisData({
+  //       totalSales: data.reduce((sum, r) => sum + r.sales_amount, 0),
+  //       totalProfit: data.reduce((sum, r) => sum + r.profit, 0),
+  //       salesByCategory: aggregate("category"),
+  //       salesByBrand: aggregate("brand"),
+  //       salesByRegion: aggregate("region"),
+  //     });
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError("Failed to fetch sales data for analysis");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const analyzeData = async () => {
     setLoading(true);
-    setError("");
     try {
-      const res = await axios.get("http://localhost:3001/sales-sample");
-      const data = res.data;
+      const [
+        salesRes,
+        topProductsRes,
+        categoryRes,
+        regionRes,
+        customerRes,
+      ] = await Promise.all([
+        axios.get("http://localhost:3001/sales-trend"),
+        axios.get("http://localhost:3001/top-products"),
+        axios.get("http://localhost:3001/category-profit"),
+        axios.get("http://localhost:3001/region-sales"),
+        axios.get("http://localhost:3001/customer-segment"),
+      ]);
 
-      // Aggregate sales by category, brand, region
-      const aggregate = (key) =>
-        Object.values(
-          data.reduce((acc, row) => {
-            if (!acc[row[key]]) acc[row[key]] = { name: row[key], sales_amount: 0 };
-            acc[row[key]].sales_amount += row.sales_amount;
-            return acc;
-          }, {})
-        ).sort((a, b) => b.sales_amount - a.sales_amount); // Sort by highest sales
+      // ✅ สรุปยอดรวมจาก sales-trend
+      const totalSales = salesRes.data.reduce(
+        (sum, r) => sum + Number(r.sales_amount || 0),
+        0
+      );
+      const totalProfit = salesRes.data.reduce(
+        (sum, r) => sum + Number(r.profit || 0),
+        0
+      );
 
+      // ✅ แปลงข้อมูลจาก endpoint ให้ match UI เดิม
       setAnalysisData({
-        totalSales: data.reduce((sum, r) => sum + r.sales_amount, 0),
-        totalProfit: data.reduce((sum, r) => sum + r.profit, 0),
-        salesByCategory: aggregate("category"),
-        salesByBrand: aggregate("brand"),
-        salesByRegion: aggregate("region"),
+        totalSales,
+        totalProfit,
+
+        // ✅ Category → ใช้ total_sales
+        salesByCategory: categoryRes.data.map((c) => ({
+          name: c.category,
+          sales_amount: Number(c.total_sales || c.sales_amount || 0),
+        })),
+
+        // ✅ Top Products → ใช้ sales_amount
+        salesByBrand: topProductsRes.data.map((p) => ({
+          name: p.product_name,
+          sales_amount: Number(p.sales_amount || p.total_sales || 0),
+        })),
+
+        // ✅ Region → ใช้ total_sales
+        salesByRegion: regionRes.data.map((r) => ({
+          name: r.region,
+          sales_amount: Number(r.total_sales || r.sales_amount || 0),
+        })),
+
+        raw: {
+          salesData: salesRes.data,
+          customerData: customerRes.data,
+        },
       });
+
     } catch (err) {
-      console.error(err);
-      setError("Failed to fetch sales data for analysis");
+      console.error("Error fetching analysis data:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    analyzeData();
+  }, []);
+
+  // ----------------- Predefined Questions -----------------
+  const quickQuestions = [
+    "สรุปยอดขายรายเดือน",
+    "แบรนด์ไหนขายดีที่สุด",
+    "หมวดหมู่สินค้าที่ทำกำไรสูงสุด",
+    "ลูกค้ากลุ่มไหนสร้างรายได้มากที่สุด",
+    "ภูมิภาคไหนมียอดขายสูงสุด",
+    "สินค้าใดควรโปรโมทเพิ่ม",
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 w-full p-6 m-5">
@@ -205,7 +293,7 @@ const Chat = () => {
 
           {/* Chat Box */}
           {/* Chat Box */}
-          <div
+          {/* <div
             className="flex-1 flex flex-col min-h-[500px] max-h-[500px] max-w-full bg-gray-100 border rounded p-3
                       overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
           >
@@ -215,11 +303,35 @@ const Chat = () => {
                 className={`mb-2 p-2 rounded max-w-[80%] break-words
                             ${chat.sender === "user" ? "bg-blue-500 text-white self-end" : "bg-gray-300 text-black self-start"}`}
               >
-                <div className="whitespace-pre-wrap">{chat.text}</div>
+                <div className="whitespace-pre-wrap">
+                  <ReactMarkdown>{chat.text}</ReactMarkdown>
+                </div>
               </div>
             ))}
             <div ref={chatEndRef}></div>
-          </div>
+          </div> */}
+          <div className="flex-1 flex flex-col min-h-[500px] max-h-[500px] max-w-full bg-gray-100 border rounded p-3
+          overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+          {chatHistory.map((chat, idx) => (
+            <div
+              key={idx}
+              className={`mb-2 p-2 rounded max-w-[80%] break-words
+                          ${chat.sender === "user" ? "bg-blue-500 text-white self-end" : "bg-gray-300 text-black self-start"}`}
+            >
+              <div className="whitespace-pre-wrap">
+                {chat.sender === "user" ? (
+                  // แสดงแค่ข้อความคำถามของผู้ใช้
+                  chat.text.split("\n")[0] // เอาเฉพาะบรรทัดแรก (คำถาม)
+                ) : (
+                  // ฝั่ง AI ยังแสดง Markdown
+                  <ReactMarkdown>{chat.text}</ReactMarkdown>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={chatEndRef}></div>
+        </div>
+
 
           <div className="p-5 bg-white border rounded mb-3">
             {/* Input */}
@@ -273,6 +385,28 @@ const Chat = () => {
               >
                 Ask AI to Summarize Analysis
               </button>
+
+              {/* Quick Questions */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {quickQuestions.map((q, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (!analysisData) {
+                        setError("กรุณากด 'Analyze Sales Data' ก่อนใช้งานคำถามนี้");
+                        return;
+                      }
+                      // ส่งไปให้ AI พร้อมสรุปจาก analysisData
+                      sendDataToChat(analysisData, q);
+                    }}
+                    className="px-3 py-2 rounded text-sm bg-gray-200 hover:bg-gray-300"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+
+
             </div>
           </div>
         </div>
@@ -322,12 +456,12 @@ const Chat = () => {
                 <h4 className="font-semibold mb-2">Sales by Brand</h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={analysisData.salesByBrand}>
-                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-                    <Bar dataKey="sales_amount" fill="#10b981" />
+                    <Tooltip />
+                    <Bar dataKey="sales_amount" fill="#8884d8" />
                   </BarChart>
+
                 </ResponsiveContainer>
               </div>
 
@@ -336,12 +470,12 @@ const Chat = () => {
                 <h4 className="font-semibold mb-2">Sales by Region</h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={analysisData.salesByRegion}>
-                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-                    <Bar dataKey="sales_amount" fill="#f59e0b" />
+                    <Tooltip />
+                    <Bar dataKey="sales_amount" fill="#8884d8" />
                   </BarChart>
+
                 </ResponsiveContainer>
               </div>
             </div>
