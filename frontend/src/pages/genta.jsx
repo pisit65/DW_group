@@ -9,8 +9,9 @@ const Genta = () => {
   const fetchData = async () => {
     try {
       const response = await axios.get("http://localhost:3001/gendata");
-      setData((prev) => [...prev, response.data]); // เก็บเพิ่มเรื่อย ๆ
-      console.log("Fetched:", response.data);
+      // setData((prev) => [...prev, response.data]);
+      setData(response.data);
+      // console.log("Fetched:", response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -20,7 +21,7 @@ const Genta = () => {
     if (!running) {
       setRunning(true);
       fetchData(); // เรียกทันที 1 ครั้ง
-      intervalRef.current = setInterval(fetchData, 10); // ทุก 10 วิ
+      intervalRef.current = setInterval(fetchData, 150); // ทุก 10 วิ
     }
   };
 

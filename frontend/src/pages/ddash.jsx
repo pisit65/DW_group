@@ -1,317 +1,6 @@
-// import { useEffect, useState,useMemo } from "react";
-// import axios from "axios";
-// import {
-//   Line,LineChart,BarChart, Bar,Legend, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer
-// } from "recharts";
-
-// import { io } from "socket.io-client";
-// const socket = io("http://localhost:3001/");
-// export default function Ddash() {
-//   const [users, setUsers] = useState([]);
-//   const [analytics, setAnalytics] = useState([]);
-
-//   useEffect(() => {
-//     axios.get("http://localhost:3001/users")
-//       .then(res =>{ setUsers(res.data)})
-//       .catch(err => console.error(err));
-
-//     // ตัวอย่างให้ analytics ใช้ sales_amount + product_name
-//     axios.get("http://localhost:3001/sales-sample")
-//       .then(res => {
-//         console.log('data',res.data); // ตรวจสอบ data
-//         setAnalytics(res.data);
-//         // console.log('analytics', analytics); // ตรวจสอบ analytics
-//       })
-//       .catch(err => console.error(err));
-//   }, []);
-
-//   useEffect(() => {
-//     if (analytics.length > 0) {
-//       console.log('Chart data:', analytics.map(item => ({
-//         product_name: item.product,
-//         sales_amount: item.price * item.quantity
-//       })));
-//     }
-//   }, [analytics]);
-//   useEffect(() => {
-//     console.log('Users updated:', users);
-//   }, [users]);
-
-
-// const chartData = Object.values(
-//   analytics.reduce((acc, item) => {
-//     if (!item.product_name) return acc; // skip empty names
-//     if (!acc[item.product_name]) {
-//       acc[item.product_name] = { product_name: item.product_name, sales_amount: 0 };
-//     }
-//     acc[item.product_name].sales_amount += Number(item.sales_amount || 0);
-//     return acc;
-//   }, {})
-// );
-
-//   const [sales, setSales] = useState([]);
-
-//   useEffect(() => {
-//     socket.on("sales_update", (data) => {
-//       console.log("📥 Real-time data:", data);
-//       setSales(data);
-//     });
-
-//     return () => {
-//       socket.off("sales_update"); 
-//     };
-//   }, []);
-
-//   const [sales_dayly, setSalessales_dayly] = useState([]);
-
-//   useEffect(() => {
-//     socket.on("sales_day", (data2) => {
-//       console.log("📥 Real-time data Day:", data2);
-//       setSalessales_dayly(data2);
-      
-//     });
-
-//     return () => {
-//       socket.off("sales_day"); 
-//     };
-//   }, []);
-
-
-//   return (
-//     <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-//       <h1>🚀 React + Express + PostgreSQL + ClickHouse</h1>
-
-//       {/* ===== Users Table ===== */}
-//       <h2>Users (Postgres)</h2>
-//       <table style={{ borderCollapse: "collapse", width: "100%" }}>
-//         <thead>
-//           <tr>
-//             <th>Product ID</th>
-//             <th>Name</th>
-//             <th>Category</th>
-//             <th>Brand</th>
-//             <th>Customer</th>
-//             <th>Gender</th>
-//             <th>Region</th>
-//             <th>Store</th>
-//             <th>Price</th>
-//             <th>Quantity</th>
-//             <th>Discount</th>
-//             <th>Sales</th>
-//             <th>Profit</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {users.map(u => (
-//             <tr key={u.id}>
-//               <td>{u.product_id}</td>
-//               <td>{u.product_name}</td>
-//               <td>{u.category}</td>
-//               <td>{u.brand}</td>
-//               <td>{u.customer_name}</td>
-//               <td>{u.gender}</td>
-//               <td>{u.region}</td>
-//               <td>{u.store_name}</td>
-//               <td>{u.unit_price} บาท</td>
-//               <td>{u.quantity} ชิ้น</td>
-//               <td>{u.discount}</td>
-//               <td>{u.sales_amount}</td>
-//               <td>{u.profit}</td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-
-//       {/* ===== Analytics Chart ===== */}
-//       <h2>Analytics (ClickHouse)</h2>
-//       {analytics.length > 0 ? (
-//         <ResponsiveContainer width="100%" height={400}>
-//           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-//             <CartesianGrid strokeDasharray="3 3" />
-//             <XAxis dataKey="product_name" />
-//             <YAxis />
-//             <Tooltip />
-//             <Bar dataKey="sales_amount" fill="#8884d8" />
-//           </BarChart>
-
-//         </ResponsiveContainer>
-//       ) : (
-//         <p>Loading chart...</p>
-//       )}
-
-//           <div>
-//       <h2>📊 Real-time Sales</h2>
-//       <ul>
-//         {sales.map((row, idx) => (
-//           <li key={idx}>
-//             {row.product_name} - {row.category} - {row.date}
-//           </li>
-//         ))}
-//       </ul>
-//       <ResponsiveContainer width="100%" height={400}>
-//         <LineChart data={sales_dayly} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-//           <CartesianGrid strokeDasharray="3 3" />
-//           <XAxis dataKey="date" />
-//           <YAxis yAxisId="left" label={{ value: "Amount", angle: -90, position: "insideLeft" }} />
-//           <YAxis yAxisId="right" orientation="right" label={{ value: "Qty", angle: 90, position: "insideRight" }} />
-//           <Tooltip />
-//           <Legend />
-//           <Line yAxisId="left" type="monotone" dataKey="total_sales" stroke="#8884d8" name="Total Sales" />
-//           <Line yAxisId="left" type="monotone" dataKey="total_profit" stroke="#82ca9d" name="Total Profit" />
-//           <Line yAxisId="right" type="monotone" dataKey="total_qty" stroke="#ff7300" name="Total Qty" />
-//         </LineChart>
-//       </ResponsiveContainer>
-//       <ul>
-//         {sales_dayly.map((row, idx) => (
-//           <li key={idx}>
-//             {row.date} - {row.total_qty} - {row.total_sales}- {row.total_profit}
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//     </div>
-//   );
-// }
-
-
-
-
-// import React, { useState, useMemo,useEffect } from 'react';
-// import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-// import { Calendar, TrendingUp, ShoppingCart, Users, MapPin, Target, DollarSign, Award } from 'lucide-react';
-// import axios from 'axios';
-// const Dashboard = () => {
-//   const [activeTab, setActiveTab] = useState('overview');
-//   const [salesData, setSalesData] = useState([]);
-//   const [topProducts, setTopProducts] = useState([]);
-//   const [categoryData, setCategoryData] = useState([]);
-//   const [regionData, setRegionData] = useState([]);
-//   const [customerData, setCustomerData] = useState([]);
-//   const defaultColors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#14B8A6"];
-
-  // const mockSalesData = [ { date: '2025-01-01', sales_amount: 125000, profit: 35000, quantity: 150, discount: 0.10 }, 
-  //   { date: '2025-01-02', sales_amount: 98000, profit: 28000, quantity: 120, discount: 0.08 }, 
-  //   { date: '2025-01-03', sales_amount: 142000, profit: 42000, quantity: 180, discount: 0.12 }, 
-  //   { date: '2025-01-04', sales_amount: 167000, profit: 48000, quantity: 210, discount: 0.15 }, 
-  //   { date: '2025-01-05', sales_amount: 134000, profit: 38000, quantity: 165, discount: 0.09 }, 
-  //   { date: '2025-01-06', sales_amount: 189000, profit: 55000, quantity: 230, discount: 0.11 }, 
-  //   { date: '2025-01-07', sales_amount: 156000, profit: 44000, quantity: 190, discount: 0.13 } ]; 
-  // const topProducts = [ { product_name: 'iPhone 15 Pro Max', total_sales: 450000, total_qty: 180, profit: 135000 }, 
-  //     { product_name: 'Samsung Galaxy S24', total_sales: 380000, total_qty: 160, profit: 114000 }, 
-  //     { product_name: 'MacBook Air M3', total_sales: 320000, total_qty: 80, profit: 96000 }, 
-  //     { product_name: 'iPad Pro 12.9"', total_sales: 280000, total_qty: 140, profit: 84000 }, 
-  //     { product_name: 'AirPods Pro 2', total_sales: 240000, total_qty: 200, profit: 72000 }, 
-  //     { product_name: 'Surface Pro 9', total_sales: 220000, total_qty: 110, profit: 66000 }, 
-  //     { product_name: 'Sony WH-1000XM5', total_sales: 180000, total_qty: 150, profit: 54000 }, 
-  //     { product_name: 'Nintendo Switch OLED', total_sales: 160000, total_qty: 120, profit: 48000 } ]; 
-  // const categoryData = [ { category: 'Smartphones', total_profit: 580000, total_sales: 1200000, color: '#3B82F6' }, 
-  //       { category: 'Laptops', total_profit: 420000, total_sales: 950000, color: '#10B981' }, 
-  //       { category: 'Audio', total_profit: 280000, total_sales: 650000, color: '#F59E0B' }, 
-  //       { category: 'Gaming', total_profit: 240000, total_sales: 580000, color: '#EF4444' }, 
-  //       { category: 'Accessories', total_profit: 180000, total_sales: 450000, color: '#8B5CF6' }, 
-  //       { category: 'Smart Home', total_profit: 150000, total_sales: 380000, color: '#06B6D4' } ]; 
-  // const regionData = [ { region: 'Central', store_city: 'Bangkok', total_sales: 2800000, customers: 1250 },
-  //          { region: 'North', store_city: 'Chiang Mai', total_sales: 1200000, customers: 580 },
-  //          { region: 'Northeast', store_city: 'Ubon Ratchathani', total_sales: 950000, customers: 420 }, 
-  //          { region: 'South', store_city: 'Hat Yai', total_sales: 880000, customers: 390 }, 
-  //          { region: 'East', store_city: 'Pattaya', total_sales: 760000, customers: 350 }, 
-  //          { region: 'West', store_city: 'Kanchanaburi', total_sales: 420000, customers: 180 } ]; 
-  // const customerData = [ { gender: 'Male', customers: 1580, total_sales: 3200000, avg_order: 2025 },
-  //           { gender: 'Female', customers: 1720, total_sales: 3800000, avg_order: 2209 } ];
-
-
-
-//   useEffect(() => {
-//   axios.get("http://localhost:3001/sales-trend")
-//     .then(res => setSalesData(res.data.map(row => ({
-//         ...row,
-//         sales_amount: Number(row.sales_amount),
-//         profit: Number(row.profit),
-//         discount: Number(row.discount),
-//           })))
-//           )
-//     .catch(err => console.error(err));  
-
-//   axios.get("http://localhost:3001/top-products")
-//     .then(res => setTopProducts(res.data))
-//     .catch(err => console.error(err));
-
-//   axios.get("http://localhost:3001/category-profit")
-//     .then(res => setCategoryData(res.data))
-//     .catch(err => console.error(err));
-
-//   axios.get("http://localhost:3001/region-sales")
-//     .then(res => setRegionData(res.data))
-//     .catch(err => console.error(err));
-
-//   axios.get("http://localhost:3001/customer-segment")
-//     .then(res => setCustomerData(res.data))
-//     .catch(err => console.error(err));
-// }, []);
-
-
-//   const totalSales = useMemo(() => 
-//     salesData.reduce((sum, day) => sum + (day.sales_amount || 0), 0), 
-//   [salesData]);
-
-//   const totalProfit = useMemo(() => 
-//     salesData.reduce((sum, day) => sum + (day.profit || 0), 0), 
-//   [salesData]);
-
-//   const avgDiscount = useMemo(() => 
-//     salesData.length > 0 
-//       ? salesData.reduce((sum, day) => sum + (day.discount || 0), 0) / salesData.length 
-//       : 0, 
-//   [salesData]);
-
-//   const totalCustomers = useMemo(() => 
-//     customerData.reduce((sum, segment) => sum + (segment.customers || 0), 0), 
-//   [customerData]);
-
-
-//   console.log('totalSales', totalSales);
-//   console.log('totalProfit', totalProfit);
-//   console.log('avgDiscount', avgDiscount);
-//   console.log('totalCustomers', totalCustomers);
-
-
-
-
-
-  
-//   const kpiCards = [
-//     {
-//       title: 'ยอดขายรวม',
-//       value: `฿${(totalSales / 1000000).toFixed(5)}M`,
-//       change: '+12.5%',
-//       icon: DollarSign,
-//       color: 'bg-blue-500'
-//     },
-//     {
-//       title: 'กำไร',
-//       value: `฿${(totalProfit / 1000).toFixed(5)}K`,
-//       change: '+8.3%',
-//       icon: TrendingUp,
-//       color: 'bg-green-500'
-//     },
-//     {
-//       title: 'ลูกค้า',
-//       value: totalCustomers.toLocaleString(),
-//       change: '+15.2%',
-//       icon: Users,
-//       color: 'bg-purple-500'
-//     },
-//     {
-//       title: 'ส่วนลดเฉลี่ย',
-//       value: `${(avgDiscount * 100).toFixed(1)}%`,
-//       change: '-2.1%',
-//       icon: Target,
-//       color: 'bg-orange-500'
-//     }
-//   ];
 import React, { useState, useMemo,useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, TrendingUp, ShoppingCart, Users, MapPin, Target, DollarSign, Award } from 'lucide-react';
+import { Calendar, TrendingUp, ShoppingCart, Users, MapPin, Target, DollarSign, Award ,Mars ,Venus} from 'lucide-react';
 import axios from 'axios';
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -321,47 +10,106 @@ const Dashboard = () => {
   const [regionData, setRegionData] = useState([]);
   const [customerData, setCustomerData] = useState([]);
   const defaultColors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#14B8A6"];
+  const [timeRange, setTimeRange] = useState('daily');
   // hook โหลดข้อมูล
-  useEffect(() => {
-    axios.get("http://localhost:3001/sales-trend")
-      .then(res => setSalesData(res.data.map(row => ({
-        ...row,
-        sales_amount: Number(row.sales_amount),
-        profit: Number(row.profit),
-        discount: Number(row.discount),
-      }))))
-      .catch(err => console.error(err));
+  const timeOptions = [
+  { id: 'daily', label: 'Daily' },
+  { id: 'weekly', label: 'Weekly' },
+  { id: 'monthly', label: 'Monthly' },
+  { id: 'yearly', label: 'Yearly' },
+];
+// โหลดข้อมูลครั้งแรก
+useEffect(() => {
+  axios.get("http://localhost:3001/sales-trend")
+    .then(res => setSalesData(res.data.map(row => ({
+      ...row,
+      sales_amount: Number(row.sales_amount),
+      profit: Number(row.profit),
+      discount: Number(row.discount),
+    }))))
+    .catch(err => console.error(err));
 
-    axios.get("http://localhost:3001/top-products")
-      .then(res => setTopProducts(res.data))
-      .catch(err => console.error(err));
-    axios.get("http://localhost:3001/top-products")
-      .then(res => console.log(res.data))
-      .catch(err => console.error(err));
+  axios.get("http://localhost:3001/top-products")
+    .then(res => setTopProducts(res.data))
+    .catch(err => console.error(err));
 
-    axios.get("http://localhost:3001/category-profit")
-      .then(res => setCategoryData(res.data))
-      .catch(err => console.error(err));
+  axios.get("http://localhost:3001/category-profit")
+    .then(res => setCategoryData(res.data))
+    .catch(err => console.error(err));
 
-    axios.get("http://localhost:3001/region-sales")
+  axios.get("http://localhost:3001/region-sales")
     .then(res => setRegionData(res.data))
-      .catch(err => console.error(err));
-    axios.get("http://localhost:3001/region-sales")
-    .then(res => console.log('region',res.data))
-      .catch(err => console.error(err));
+    .catch(err => console.error(err));
 
-    axios.get("http://localhost:3001/customer-segment")
-      .then(res => setCustomerData(res.data))
-      .catch(err => console.error(err));
-  }, []);
+  // axios.get("http://localhost:3001/customer-segment")
+  //   .then(res => setCustomerData(res.data))
+  //   .catch(err => console.error(err));
+}, []);
+
+// โหลดข้อมูลตามช่วงเวลา
+useEffect(() => {
+  axios.get(`http://localhost:3001/sales-trend?range=${timeRange}`)
+    .then(res => setSalesData(res.data))
+    .catch(err => console.error(err));
+
+  axios.get(`http://localhost:3001/pd/customer-segment?range=${timeRange}`)
+    .then(res => setCustomerData(res.data))
+    .catch(err => console.error(err));
+  axios.get(`http://localhost:3001/pd/customer-segment?range=${timeRange}`)
+    .then(res => console.log(res.data))
+    .catch(err => console.error(err));
+  // axios.get(`http://localhost:3001/customer-segment?range=${timeRange}`)
+  //   .then(res => setCustomerData(res.data))
+  //   .catch(err => console.error(err));
+}, [timeRange]);
+
+
+  // ฟังก์ชันสำหรับจัดรูปแบบแกน X ของกราฟ
+  const formatXAxisTick = (tickItem) => {
+    const date = new Date(tickItem);
+    switch (timeRange) {
+      case 'yearly':
+        // แสดงแค่ปี: "2025"
+        return date.toLocaleDateString('th-TH', { year: 'numeric' });
+      case 'monthly':
+        // แสดง เดือน (ย่อ) + ปี: "ก.ย. 2025"
+        return date.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+      case 'weekly':
+      case 'daily':
+      default:
+        // แสดง วัน + เดือน (ย่อ): "30 ก.ย."
+        return date.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  // ฟังก์ชันสำหรับจัดรูปแบบ Label ของ Tooltip (เมื่อเอาเมาส์ไปชี้)
+  const formatTooltipLabel = (label) => {
+    const date = new Date(label);
+    switch (timeRange) {
+      case 'yearly':
+        return `ปี ${date.toLocaleDateString('th-TH', { year: 'numeric' })}`;
+      case 'monthly':
+        return date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+      case 'weekly':
+      case 'daily':
+      default:
+        return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  };
+
+
+
 
   // helper: คำนวณ % เปลี่ยนแปลง
-  const getChangePercent = (current, prev) => {
-    if (prev === 0) return "+0%";
-    const diff = ((current - prev) / prev) * 100;
-    const sign = diff >= 0 ? "+" : "";
-    return `${sign}${diff.toFixed(1)}%`;
+  const getChangePercent = (curr, prev) => {
+    if (prev === 0) {
+      if (curr === 0) return "0%";
+      return "+100%"; // จาก 0 → มีค่า ถือว่าโตเต็มที่
+    }
+    const diff = ((curr - prev) / prev) * 100;
+    return `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%`;
   };
+
 
   // คำนวณ KPI
   const totalSales = useMemo(() => 
@@ -372,26 +120,51 @@ const Dashboard = () => {
     salesData.reduce((sum, day) => sum + (day.profit || 0), 0), 
   [salesData]);
 
-  const avgDiscount = useMemo(() => 
-    salesData.length > 0 
-      ? salesData.reduce((sum, day) => sum + (day.discount || 0), 0) / salesData.length 
-      : 0, 
-  [salesData]);
+  // const avgDiscount = useMemo(() => 
+  //   salesData.length > 0 
+  //     ? salesData.reduce((sum, day) => sum + (day.discount || 0), 0) / salesData.length 
+  //     : 0, 
+  // [salesData]);
 
   const totalCustomers = useMemo(() => 
     customerData.reduce((sum, seg) => sum + (seg.customers || 0), 0), 
   [customerData]);
 
+
   // เปรียบเทียบข้อมูลล่าสุดกับก่อนหน้า
   const half = Math.floor(salesData.length / 2);
 
+  // Sales
   const prevSales = salesData.slice(0, half).reduce((sum, d) => sum + (d.sales_amount || 0), 0);
   const currSales = salesData.slice(half).reduce((sum, d) => sum + (d.sales_amount || 0), 0);
 
+  // Profit
   const prevProfit = salesData.slice(0, half).reduce((sum, d) => sum + (d.profit || 0), 0);
   const currProfit = salesData.slice(half).reduce((sum, d) => sum + (d.profit || 0), 0);
 
-  // สร้าง KPI Cards
+  // Customers
+  // คำนวณลูกค้าแบบแบ่งครึ่ง dataset ของ customerData เอง
+  const halfCust = Math.floor(customerData.length / 2);
+
+const prevCustomers = customerData
+  .slice(0, halfCust)
+  .reduce((sum, d) => sum + (d.customers || 0), 0);
+
+const currCustomers = customerData
+  .slice(halfCust)
+  .reduce((sum, d) => sum + (d.customers || 0), 0);
+
+
+
+  // Average Discount
+  // const prevAvgDiscount = salesData.slice(0, half).reduce((sum, d) => sum + (d.discount || 0), 0) / half;
+  // const currAvgDiscount = salesData.slice(half).reduce((sum, d) => sum + (d.discount || 0), 0) / (salesData.length - half);
+  const avgDiscount = salesData.length > 0 ? salesData.reduce((sum, day) => sum + (day.discount || 0), 0) / salesData.length : 0;
+
+  const prevAvgDiscount = salesData.slice(0, half).reduce((sum, d) => sum + (d.discount || 0), 0) / half;
+  const currAvgDiscount = salesData.slice(half).reduce((sum, d) => sum + (d.discount || 0), 0) / (salesData.length - half);
+
+
   const kpiCards = [
     {
       title: 'ยอดขายรวม',
@@ -410,18 +183,20 @@ const Dashboard = () => {
     {
       title: 'ลูกค้า',
       value: totalCustomers.toLocaleString(),
-      change: getChangePercent(currSales, prevSales),
+      change: getChangePercent(currCustomers, prevCustomers),
       icon: Users,
       color: 'bg-purple-500'
     },
     {
       title: 'ส่วนลดเฉลี่ย',
       value: `${(avgDiscount * 100).toFixed(1)}%`,
-      change: getChangePercent(currSales, prevSales),
+      change: getChangePercent(currAvgDiscount, prevAvgDiscount),
       icon: Target,
       color: 'bg-orange-500'
     }
   ];
+
+
 
 
   const tabButtons = [
@@ -439,8 +214,22 @@ const Dashboard = () => {
         <p className="text-slate-600">Real-time business intelligence and insights</p>
       </div>
 
+      <div className="flex gap-2 mb-4">
+        {timeOptions.map(opt => (
+          <button
+            key={opt.id}
+            className={`px-4 py-2 rounded ${
+              timeRange === opt.id ? 'bg-blue-500 text-white' : 'bg-gray-200'
+            }`}
+            onClick={() => setTimeRange(opt.id)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
         {kpiCards.map((kpi, index) => {
           const IconComponent = kpi.icon;
           return (
@@ -492,22 +281,19 @@ const Dashboard = () => {
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-blue-500" />
-              Sales Trend (7 Days)
+              {/* อาจจะเปลี่ยนหัวข้อตามช่วงเวลาด้วยก็ได้ */}
+              Sales Trend
             </h2>
             <ResponsiveContainer width="100%" height={500}>
               <AreaChart data={salesData}>
-                <defs>
-                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+                {/* ... */}
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis 
-                  dataKey="date" 
+                  dataKey="period" 
                   stroke="#64748B"
                   fontSize={12}
-                  tickFormatter={(value) => new Date(value).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })}
+                  // ใช้ฟังก์ชันใหม่ในการจัดรูปแบบแกน X
+                  tickFormatter={formatXAxisTick} 
                 />
                 <YAxis 
                   stroke="#64748B"
@@ -516,7 +302,8 @@ const Dashboard = () => {
                 />
                 <Tooltip 
                   formatter={(value) => [`฿${value.toLocaleString()}`, 'Sales']}
-                  labelFormatter={(label) => new Date(label).toLocaleDateString('th-TH')}
+                  // ใช้ฟังก์ชันใหม่ในการจัดรูปแบบ Label ของ Tooltip
+                  labelFormatter={formatTooltipLabel} 
                   contentStyle={{
                     backgroundColor: 'white',
                     border: '1px solid #E2E8F0',
@@ -585,7 +372,7 @@ const Dashboard = () => {
           <ResponsiveContainer width="100%" height={500}>
             <BarChart
               data={topProducts}
-              layout="vertical" // <-- ใช้ vertical จะง่ายสำหรับ category ที่เป็นชื่อสินค้า
+              layout="vertical" 
               margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
@@ -682,12 +469,26 @@ const Dashboard = () => {
               {customerData.map((segment, index) => (
                 <div key={index} className="p-4 bg-slate-50 rounded-xl">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-slate-700">{segment.gender}</span>
-                    <span className="text-sm text-slate-500">{segment.customers.toLocaleString()} customers</span>
+                    <span className="flex items-center gap-2 font-semibold text-slate-700">
+                      {segment.gender === "Male" ? (
+                        <Mars className="w-5 h-5 text-blue-500" />
+                      ) : (
+                        <Venus className="w-5 h-5 text-pink-500" />
+                      )}
+                      {segment.gender}
+                    </span>
+                    <span className="text-sm text-slate-500">
+                      {segment.customers.toLocaleString()} customers
+                    </span>
                   </div>
+
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-slate-800">฿{segment.total_sales.toLocaleString()}</span>
-                    <span className="text-sm text-slate-600">Avg: ฿{segment.avg_order.toLocaleString()}</span>
+                    <span className="text-lg font-bold text-slate-800">
+                      ฿{segment.total_sales.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-slate-600">
+                      Avg: ฿{segment.avg_order.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               ))}

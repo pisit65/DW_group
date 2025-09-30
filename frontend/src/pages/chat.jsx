@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Pie,PieChart,BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import graphIcon from "../assets/graph-svgrepo-com.svg";
+import { Pie, PieChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import ReactMarkdown from "react-markdown";
+
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
@@ -12,9 +12,12 @@ const Chat = () => {
   const [chatMode, setChatMode] = useState("demo");
   const [selectedMode, setSelectedMode] = useState("gemini");
   const [analysisData, setAnalysisData] = useState(null);
+  const [sessionId, setSessionId] = useState(null); // เพิ่ม sessionId
   const chatEndRef = useRef(null);
 
+  // สร้าง session ใหม่เมื่อ component mount
   useEffect(() => {
+    createNewSession();
     checkApiStatus();
   }, []);
 
@@ -22,7 +25,32 @@ const Chat = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
-  // ---------------- Chat API ----------------
+  // ฟังก์ชันสร้าง session ใหม่
+  const createNewSession = async () => {
+    try {
+      const res = await axios.post("http://localhost:3001/chat/session");
+      setSessionId(res.data.sessionId);
+      console.log("New session created:", res.data.sessionId);
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      // ถ้าสร้าง session ไม่ได้ ให้สร้าง ID เองในฝั่ง client
+      setSessionId(Date.now().toString(36) + Math.random().toString(36).substr(2));
+    }
+  };
+
+  // ฟังก์ชันล้างประวัติการสนทนา
+  const clearConversation = async () => {
+    if (sessionId) {
+      try {
+        await axios.delete(`http://localhost:3001/chat/session/${sessionId}`);
+      } catch (err) {
+        console.error("Failed to clear session:", err);
+      }
+    }
+    setChatHistory([]);
+    createNewSession();
+  };
+
   const handleRequest = async (endpoint, onSuccess, onExtra) => {
     setLoading(true);
     setError("");
@@ -31,12 +59,22 @@ const Chat = () => {
       let res;
 
       if (endpoint === "chat") {
-        res = await axios.post(url, { message, mode: selectedMode });
+        res = await axios.post(url, { 
+          message, 
+          mode: selectedMode,
+          sessionId // ส่ง sessionId ไปด้วย
+        });
       } else {
         res = await axios.get(url);
       }
 
       const data = res.data;
+      
+      // อัพเดท sessionId ถ้า backend ส่งกลับมา
+      if (data.sessionId) {
+        setSessionId(data.sessionId);
+      }
+      
       onSuccess?.(data);
       onExtra?.(data);
     } catch (err) {
@@ -47,21 +85,19 @@ const Chat = () => {
     }
   };
 
-  // Fixed sendDataToChat function
-const sendDataToChat = async (data, customMessage) => {
-  if (!data) {
-    setError("No analysis data to send.");
-    return;
-  }
+  const sendDataToChat = async (data, customMessage) => {
+    if (!data) {
+      setError("No analysis data to send.");
+      return;
+    }
 
-  // จัดเรียงข้อมูลให้อ่านง่าย (Markdown-style)
-  const regionSummary = {};
-  data.salesByRegion.forEach(r => {
-    if (!regionSummary[r.name]) regionSummary[r.name] = 0;
-    regionSummary[r.name] += r.sales_amount;
-  });
+    const regionSummary = {};
+    data.salesByRegion.forEach(r => {
+      if (!regionSummary[r.name]) regionSummary[r.name] = 0;
+      regionSummary[r.name] += r.sales_amount;
+    });
 
-  const summaryText = `
+    const summaryText = `
 **Overall Performance**
 - Total Sales: $${data.totalSales.toLocaleString(undefined, {minimumFractionDigits:2})}
 - Total Profit: $${data.totalProfit.toLocaleString(undefined, {minimumFractionDigits:2})}
@@ -76,37 +112,42 @@ ${data.salesByBrand.slice(0,3).map(b => `- ${b.name}: $${b.sales_amount.toLocale
 ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(undefined, {minimumFractionDigits:2})}`).join('\n')}
 `;
 
-  const messageToSend = customMessage 
-    ? `${customMessage}\nจากข้อมูลต่อไปนี้:\n${summaryText}` 
-    : `ช่วยสรุปข้อมูลโดยใช้ข้อมูลตัวนี้ให้หน่อย:\n${summaryText}`;
+    const messageToSend = customMessage 
+      ? `${customMessage}\nจากข้อมูลต่อไปนี้:\n${summaryText}` 
+      : `ช่วยสรุปข้อมูลโดยใช้ข้อมูลตัวนี้ให้หน่อย:\n${summaryText}`;
 
-  if (!messageToSend.trim()) {
-    setError("Generated message is empty.");
-    return;
-  }
+    if (!messageToSend.trim()) {
+      setError("Generated message is empty.");
+      return;
+    }
 
-  // ส่งข้อความไป AI
-  setChatHistory(prev => [...prev, { sender: "user", text: messageToSend }]);
-  setLoading(true);
-  setError("");
-  try {
-    const res = await axios.post("http://localhost:3001/chat", { 
-      message: messageToSend, 
-      mode: selectedMode 
-    });
-    setChatHistory(prev => [...prev, { sender: "bot", text: res.data.reply }]);
-    setChatMode(res.data.mode || "unknown");
-    if (res.data.note) setError(res.data.note);
-  } catch (err) {
-    console.error("Chat request error:", err);
-    setError(err.response?.data?.error || "Failed to send message to AI");
-  } finally {
-    setLoading(false);
-  }
+    setChatHistory(prev => [...prev, { sender: "user", text: messageToSend }]);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await axios.post("http://localhost:3001/chat", { 
+        message: messageToSend, 
+        mode: selectedMode,
+        sessionId // ส่ง sessionId ไปด้วย
+      });
+      
+      // อัพเดท sessionId
+      if (res.data.sessionId) {
+        setSessionId(res.data.sessionId);
+      }
+      
+      setChatHistory(prev => [...prev, { sender: "bot", text: res.data.reply }]);
+      setChatMode(res.data.mode || "unknown");
+      if (res.data.note) setError(res.data.note);
+    } catch (err) {
+      console.error("Chat request error:", err);
+      setError(err.response?.data?.error || "Failed to send message to AI");
+    } finally {
+      setLoading(false);
+    }
 
-  setMessage("");
-};
-
+    setMessage("");
+  };
 
   const sendMessage = () => {
     if (!message.trim()) return;
@@ -134,6 +175,7 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
     demo_quota_exceeded: "bg-red-500 text-white",
     default: "bg-gray-500 text-white",
   };
+  
   const modeTexts = {
     openai: "OpenAI Active",
     gemini: "Gemini Active",
@@ -143,51 +185,14 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
     demo_error: "API Error - Demo Mode",
     default: "Unknown Mode",
   };
+  
   const getModeClass = (mode) => modeColors[mode] || modeColors.default;
   const getModeText = (mode) => modeTexts[mode] || modeTexts.default;
 
-  // ---------------- Data Analysis ----------------
-  // const analyzeData = async () => {
-  //   setLoading(true);
-  //   setError("");
-  //   try {
-  //     const res = await axios.get("http://localhost:3001/sales-sample");
-  //     const data = res.data;
-
-  //     // Aggregate sales by category, brand, region
-  //     const aggregate = (key) =>
-  //       Object.values(
-  //         data.reduce((acc, row) => {
-  //           if (!acc[row[key]]) acc[row[key]] = { name: row[key], sales_amount: 0 };
-  //           acc[row[key]].sales_amount += row.sales_amount;
-  //           return acc;
-  //         }, {})
-  //       ).sort((a, b) => b.sales_amount - a.sales_amount); // Sort by highest sales
-
-  //     setAnalysisData({
-  //       totalSales: data.reduce((sum, r) => sum + r.sales_amount, 0),
-  //       totalProfit: data.reduce((sum, r) => sum + r.profit, 0),
-  //       salesByCategory: aggregate("category"),
-  //       salesByBrand: aggregate("brand"),
-  //       salesByRegion: aggregate("region"),
-  //     });
-  //   } catch (err) {
-  //     console.error(err);
-  //     setError("Failed to fetch sales data for analysis");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const analyzeData = async () => {
     setLoading(true);
     try {
-      const [
-        salesRes,
-        topProductsRes,
-        categoryRes,
-        regionRes,
-        customerRes,
-      ] = await Promise.all([
+      const [salesRes, topProductsRes, categoryRes, regionRes, customerRes] = await Promise.all([
         axios.get("http://localhost:3001/sales-trend"),
         axios.get("http://localhost:3001/top-products"),
         axios.get("http://localhost:3001/category-profit"),
@@ -195,45 +200,29 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
         axios.get("http://localhost:3001/customer-segment"),
       ]);
 
-      // ✅ สรุปยอดรวมจาก sales-trend
-      const totalSales = salesRes.data.reduce(
-        (sum, r) => sum + Number(r.sales_amount || 0),
-        0
-      );
-      const totalProfit = salesRes.data.reduce(
-        (sum, r) => sum + Number(r.profit || 0),
-        0
-      );
+      const totalSales = salesRes.data.reduce((sum, r) => sum + Number(r.sales_amount || 0), 0);
+      const totalProfit = salesRes.data.reduce((sum, r) => sum + Number(r.profit || 0), 0);
 
-      // ✅ แปลงข้อมูลจาก endpoint ให้ match UI เดิม
       setAnalysisData({
         totalSales,
         totalProfit,
-
-        // ✅ Category → ใช้ total_sales
         salesByCategory: categoryRes.data.map((c) => ({
           name: c.category,
           sales_amount: Number(c.total_sales || c.sales_amount || 0),
         })),
-
-        // ✅ Top Products → ใช้ sales_amount
         salesByBrand: topProductsRes.data.map((p) => ({
           name: p.product_name,
           sales_amount: Number(p.sales_amount || p.total_sales || 0),
         })),
-
-        // ✅ Region → ใช้ total_sales
         salesByRegion: regionRes.data.map((r) => ({
           name: r.region,
           sales_amount: Number(r.total_sales || r.sales_amount || 0),
         })),
-
         raw: {
           salesData: salesRes.data,
           customerData: customerRes.data,
         },
       });
-
     } catch (err) {
       console.error("Error fetching analysis data:", err);
     } finally {
@@ -245,7 +234,6 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
     analyzeData();
   }, []);
 
-  // ----------------- Predefined Questions -----------------
   const quickQuestions = [
     "สรุปยอดขายรายเดือน",
     "แบรนด์ไหนขายดีที่สุด",
@@ -261,20 +249,33 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
         <div className="w-1/2">
           <h2 className="text-2xl font-bold mb-4">Data Warehouse Chat Interface</h2>
 
-          {/* Status */}
+          {/* Status & Session Info */}
           <div className="flex justify-between items-center p-3 mb-3 bg-gray-100 border-2 rounded-lg">
             <div className="flex items-center space-x-2">
               <strong>Status: </strong>
               <span className={`px-2 py-1 rounded text-xs ${getModeClass(chatMode)}`}>
                 {getModeText(chatMode)}
               </span>
+              {sessionId && (
+                <span className="text-xs text-gray-500 ml-2">
+                  Session: {sessionId.slice(0, 8)}...
+                </span>
+              )}
             </div>
-            <button
-              onClick={checkApiStatus}
-              className="px-3 py-1 text-sm rounded bg-blue-500 text-white hover:bg-blue-600"
-            >
-              Refresh Status
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={clearConversation}
+                className="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
+              >
+                Clear Chat
+              </button>
+              <button
+                onClick={checkApiStatus}
+                className="px-3 py-1 text-sm rounded bg-blue-500 text-white hover:bg-blue-600"
+              >
+                Refresh Status
+              </button>
+            </div>
           </div>
 
           {/* Select Mode */}
@@ -292,11 +293,14 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
           </div>
 
           {/* Chat Box */}
-          {/* Chat Box */}
-          {/* <div
-            className="flex-1 flex flex-col min-h-[500px] max-h-[500px] max-w-full bg-gray-100 border rounded p-3
-                      overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
-          >
+          <div className="flex-1 flex flex-col min-h-[500px] max-h-[500px] max-w-full bg-gray-100 border rounded p-3
+          overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+            {chatHistory.length === 0 && (
+              <div className="text-center text-gray-400 mt-20">
+                <p>เริ่มต้นการสนทนาของคุณ...</p>
+                <p className="text-sm mt-2">AI จะจำบทสนทนาของคุณในเซสชันนี้</p>
+              </div>
+            )}
             {chatHistory.map((chat, idx) => (
               <div
                 key={idx}
@@ -304,34 +308,16 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
                             ${chat.sender === "user" ? "bg-blue-500 text-white self-end" : "bg-gray-300 text-black self-start"}`}
               >
                 <div className="whitespace-pre-wrap">
-                  <ReactMarkdown>{chat.text}</ReactMarkdown>
+                  {chat.sender === "user" ? (
+                    chat.text.split("\n")[0]
+                  ) : (
+                    <ReactMarkdown>{chat.text}</ReactMarkdown>
+                  )}
                 </div>
               </div>
             ))}
             <div ref={chatEndRef}></div>
-          </div> */}
-          <div className="flex-1 flex flex-col min-h-[500px] max-h-[500px] max-w-full bg-gray-100 border rounded p-3
-          overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
-          {chatHistory.map((chat, idx) => (
-            <div
-              key={idx}
-              className={`mb-2 p-2 rounded max-w-[80%] break-words
-                          ${chat.sender === "user" ? "bg-blue-500 text-white self-end" : "bg-gray-300 text-black self-start"}`}
-            >
-              <div className="whitespace-pre-wrap">
-                {chat.sender === "user" ? (
-                  // แสดงแค่ข้อความคำถามของผู้ใช้
-                  chat.text.split("\n")[0] // เอาเฉพาะบรรทัดแรก (คำถาม)
-                ) : (
-                  // ฝั่ง AI ยังแสดง Markdown
-                  <ReactMarkdown>{chat.text}</ReactMarkdown>
-                )}
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef}></div>
-        </div>
-
+          </div>
 
           <div className="p-5 bg-white border rounded mb-3">
             {/* Input */}
@@ -365,6 +351,7 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
                 <strong>Error:</strong> {error}
               </div>
             )}
+
             {/* Action Buttons */}
             <div className="flex space-x-2 mb-3">
               <button
@@ -383,30 +370,27 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
                   loading || !analysisData ? "bg-gray-400 cursor-not-allowed" : "bg-purple-500 hover:bg-purple-600"
                 }`}
               >
-                Ask AI to Summarize Analysis
+                Ask AI to Summarize
               </button>
+            </div>
 
-              {/* Quick Questions */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {quickQuestions.map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      if (!analysisData) {
-                        setError("กรุณากด 'Analyze Sales Data' ก่อนใช้งานคำถามนี้");
-                        return;
-                      }
-                      // ส่งไปให้ AI พร้อมสรุปจาก analysisData
-                      sendDataToChat(analysisData, q);
-                    }}
-                    className="px-3 py-2 rounded text-sm bg-gray-200 hover:bg-gray-300"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-
-
+            {/* Quick Questions */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {quickQuestions.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (!analysisData) {
+                      setError("กรุณากด 'Analyze Sales Data' ก่อนใช้งานคำถามนี้");
+                      return;
+                    }
+                    sendDataToChat(analysisData, q);
+                  }}
+                  className="px-3 py-2 rounded text-sm bg-gray-200 hover:bg-gray-300"
+                >
+                  {q}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -461,7 +445,6 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
                     <Tooltip />
                     <Bar dataKey="sales_amount" fill="#8884d8" />
                   </BarChart>
-
                 </ResponsiveContainer>
               </div>
 
@@ -475,7 +458,6 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
                     <Tooltip />
                     <Bar dataKey="sales_amount" fill="#8884d8" />
                   </BarChart>
-
                 </ResponsiveContainer>
               </div>
             </div>
@@ -485,7 +467,6 @@ ${Object.entries(regionSummary).map(([k,v]) => `- ${k}: $${v.toLocaleString(unde
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

@@ -67,7 +67,9 @@ CREATE TABLE sales_data (
 docker exec -it clickhouse_db clickhouse-client -u default --password 2546
 ```
 ```
-CREATE TABLE IF NOT EXISTS sales_data (
+CREATE TABLE sales_data
+(
+    id UInt64,
     date Date,
     product_id String,
     product_name String,
@@ -86,8 +88,13 @@ CREATE TABLE IF NOT EXISTS sales_data (
     sales_amount Decimal(12,2),
     profit Decimal(12,2)
 )
-ENGINE = MergeTree()
-ORDER BY date;
+ENGINE = PostgreSQL(
+    'postgres',
+    'mydb',
+    'sales_data',
+    'dicek',
+    '2546'
+)
 ```
 
 -- Foreign Table (Proxy to PostgreSQL)
@@ -120,6 +127,33 @@ ENGINE = PostgreSQL(
     'dicek',
     '2546'
 );
+
+CREATE TABLE sales_data_ch
+(
+    id UInt64,
+    date Date,
+    product_id String,
+    product_name String,
+    category String,
+    brand String,
+    customer_id String,
+    customer_name String,
+    gender String,
+    region String,
+    store_id String,
+    store_name String,
+    store_city String,
+    quantity Int32,
+    unit_price Decimal(12,2),
+    discount Decimal(5,2),
+    sales_amount Decimal(12,2),
+    profit Decimal(12,2)
+)
+ENGINE = MergeTree()
+ORDER BY id;
+
+INSERT INTO sales_data_ch
+SELECT * FROM sales_data_pg;
 ```
 ---
 
@@ -136,3 +170,107 @@ http://localhost:3000/genta
 ```
 ---
 
+---
+
+```
+CREATE TABLE sales_summary_daily (
+    date          date PRIMARY KEY,
+    total_qty     integer,
+    total_sales   numeric(12,2),
+    total_profit  numeric(12,2),
+    avg_discount  numeric(5,2)
+);
+
+INSERT INTO sales_summary_daily (date, total_qty, total_sales, total_profit, avg_discount)
+SELECT
+    date,
+    SUM(quantity) AS total_qty,
+    SUM(sales_amount) AS total_sales,
+    SUM(profit) AS total_profit,
+    AVG(discount) AS avg_discount
+FROM sales_data_pg
+GROUP BY date;
+```
+---
+
+```
+CREATE TABLE sales_summary_product (
+    product_id    varchar(20),
+    product_name  varchar(100),
+    total_qty     integer,
+    total_sales   numeric(12,2),
+    total_profit  numeric(12,2),
+    PRIMARY KEY (product_id)
+);
+
+INSERT INTO sales_summary_product (product_id, product_name, total_qty, total_sales, total_profit)
+SELECT
+    product_id,
+    MAX(product_name) AS product_name,
+    SUM(quantity) AS total_qty,
+    SUM(sales_amount) AS total_sales,
+    SUM(profit) AS total_profit
+FROM sales_data_pg
+GROUP BY product_id;
+```
+
+---
+
+```
+CREATE TABLE sales_summary_category (
+    category      varchar(50) PRIMARY KEY,
+    total_sales   numeric(12,2),
+    total_profit  numeric(12,2)
+);
+
+INSERT INTO sales_summary_category (category, total_sales, total_profit)
+SELECT
+    category,
+    SUM(sales_amount),
+    SUM(profit)
+FROM sales_data_pg
+GROUP BY category;
+```
+
+
+---
+
+```
+CREATE TABLE sales_summary_region (
+    region        varchar(50),
+    store_city    varchar(50),
+    total_sales   numeric(12,2),
+    customers     integer,
+    PRIMARY KEY (region, store_city)
+);
+
+INSERT INTO sales_summary_region (region, store_city, total_sales, customers)
+SELECT
+    region,
+    store_city,
+    SUM(sales_amount),
+    COUNT(DISTINCT customer_id) AS customers
+FROM sales_data_pg
+GROUP BY region, store_city;
+```
+
+
+---
+
+```
+CREATE TABLE sales_summary_customer (
+    gender        varchar(10) PRIMARY KEY,
+    customers     integer,
+    total_sales   numeric(12,2),
+    avg_order     numeric(12,2)
+);
+
+INSERT INTO sales_summary_customer (gender, customers, total_sales, avg_order)
+SELECT
+    gender,
+    COUNT(DISTINCT customer_id) AS customers,
+    SUM(sales_amount) AS total_sales,
+    SUM(sales_amount)::numeric / NULLIF(COUNT(DISTINCT customer_id),0) AS avg_order
+FROM sales_data_pg
+GROUP BY gender;
+```
