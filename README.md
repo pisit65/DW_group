@@ -127,4 +127,12 @@ ENGINE = PostgreSQL(
 It’s ideal for e-commerce **reporting, dashboarding, and analytics pipelines**.
 
 ---
+---
+## Generate Data
+
+use this path to generate data
+```
+http://localhost:3000/genta
+```
+---
 
