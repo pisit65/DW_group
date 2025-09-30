@@ -28,6 +28,23 @@ This repository contains **sample datasets** from e-commerce transactions, featu
 | 18 | `profit`       | Decimal(12,2)   | Profit from the transaction           |
 
 ---
+
+# ไปที่ .env
+backend -> .env
+
+- get from 
+```
+https://ai.google.dev/
+
+go to dashboard
+
+```
+```
+GOOGLE_API_KEY=your_api
+PORT=3001
+
+```
+
 ```
 docker-compose up -build -d
 ```
@@ -274,3 +291,5 @@ SELECT
 FROM sales_data_pg
 GROUP BY gender;
 ```
+
+
