@@ -28,10 +28,15 @@ This repository contains **sample datasets** from e-commerce transactions, featu
 | 18 | `profit`       | Decimal(12,2)   | Profit from the transaction           |
 
 ---
+```
+docker-compose up -build -d
+```
+---
 
 ## 🐘 PostgreSQL Setup
-
+```
 docker exec -it postgres psql -U dicek -d mydb
+```
 ```
 CREATE TABLE sales_data (
     id SERIAL PRIMARY KEY,
@@ -57,10 +62,10 @@ CREATE TABLE sales_data (
 ---
 
 ## ⚡ ClickHouse Setup
-
-docker exec -it clickhouse_db clickhouse-client -u default --password 2546
-
 -- Main Table
+```
+docker exec -it clickhouse_db clickhouse-client -u default --password 2546
+```
 ```
 CREATE TABLE IF NOT EXISTS sales_data (
     date Date,
@@ -123,6 +128,3 @@ It’s ideal for e-commerce **reporting, dashboarding, and analytics pipelines**
 
 ---
 
-```
-docker-compose up -build -d
-```
