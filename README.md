@@ -1,3 +1,62 @@
+[https://drive.google.com/file/d/1DMzjWxEcFpAEYBVtL9SUU5Y-cg8JSazJ/view?usp=sharing]
+# 1. ชื่อโครงการ (Project Title)
+
+**ภาษาไทย:** ระบบวิเคราะห์แนวโน้มร้านค้าออนไลน์และสร้างสรุปรายงานอัตโนมัติ
+**English:** E-commerce Sales Trend Analytics and Automated Report
+
+**ชุดข้อมูล (Dataset):** [https://github.com/luminati-io/eCommerce-dataset-samples](https://github.com/luminati-io/eCommerce-dataset-samples)
+
+***
+
+# 2. สมาชิกกลุ่ม (Group Members)
+
+| ชื่อ - นามสกุล | รหัสนักศึกษา | หน้าที่ในกลุ่ม |
+| :--- | :--- | :--- |
+| พิสิษฐ์ พวงธาตุ | 65114540420 | **ETL** (Extract, Transform, Load) และ **DW Schema** (Data Warehouse Schema) |
+| พศวีร์ มันตะ | 65114540383 | **AI Prompt Engineering** และ **Summary Report Generation** |
+| วัฒนกิจ เปล่งศรี | 65114540574 | **Dashboard Development** และ **Visualization** |
+
+***
+
+# 3. วัตถุประสงค์ของโครงการ (Project Objectives)
+
+## วัตถุประสงค์หลัก (Main Objective)
+* พัฒนาระบบคลังข้อมูลเพื่อวิเคราะห์แนวโน้มยอดขายและสร้างรายงานอัตโนมัติจากข้อมูลร้านค้าออนไลน์
+
+## วัตถุประสงค์รอง (Sub-Objectives)
+1.  ออกแบบ **Star Schema** สำหรับ Data Warehouse เพื่อรองรับการวิเคราะห์ข้อมูลการขาย
+2.  ดำเนินการ **ETL** ข้อมูลจากไฟล์ CSV ต้นฉบับเข้าสู่ Data Warehouse
+3.  สร้าง **Dashboard** เพื่อแสดงผลการวิเคราะห์ และพัฒนา **AI Prompt** เพื่อใช้ในการสรุปแนวโน้มและรายงาน
+
+***
+
+# 5. ขอบเขตของโครงการ (Project Scope)
+
+## สิ่งที่จะทำในโครงการ (Inclusions)
+* **พัฒนา Dashboard:** สร้าง Dashboard บน **Web Application (React + Express)** สำหรับแสดงผลการวิเคราะห์ที่สำคัญ เช่น:
+    * แนวโน้มยอดขายตามช่วงเวลาต่าง ๆ
+    * อันดับสินค้าขายดี (Top-Selling Products)
+    * แหล่งที่มาของยอดขาย (Sales Channel Analysis)
+* **ประยุกต์ใช้ Generative AI:** ใช้ **OpenAI API (ChatGPT)** เพื่อสรุปรายงานยอดขายในรูปแบบข้อความอัตโนมัติ เช่น:
+    * สรุปยอดขายและผลการดำเนินงานในสัปดาห์/เดือนที่ผ่านมา
+    * สร้างคำแนะนำทางธุรกิจจากแนวโน้มข้อมูลที่ค้นพบ
+
+## สิ่งที่จะไม่ทำในโครงการ (Exclusions)
+* **ข้อมูล:** ไม่ใช้ข้อมูลจริงจากร้านค้า (ใช้เฉพาะข้อมูลตัวอย่าง (sample) ที่เผยแพร่จาก GitHub ตามที่ระบุไว้)
+* **การพัฒนา AI:** ไม่สร้างหรือเทรนโมเดล AI เอง (ใช้เฉพาะ API สำเร็จรูปจาก OpenAI)
+* **คุณสมบัติเสริม:** ไม่ออกแบบระบบแจ้งเตือน (Notification System) หรือระบบแนะนำสินค้า (Deep Recommendation System) แบบเชิงลึก
+
+***
+
+# 6. เครื่องมือและเทคโนโลยีที่ใช้ (Tools and Technologies)
+
+| ประเภท | เครื่องมือ/เทคโนโลยี | รายละเอียดการใช้งาน |
+| :--- | :--- | :--- |
+| **ฐานข้อมูล** (Database) | **ClickHouse** | ใช้เป็น Data Warehouse (DW) สำหรับจัดเก็บข้อมูลที่ผ่านการ Transform แล้ว |
+| **ETL Tools** | **Python (pandas)**, **dbt (data build tool)** | ใช้ Python/Pandas ในการ Clean/Transform ข้อมูล และใช้ dbt ในการจัดระเบียบ Transformation Logic และสร้าง DW Schema |
+| **BI Tools / Web App** | **React**, **Express.js**, **Child Process (Python)** | **React** สำหรับ Front-end (Dashboard), **Express.js** สำหรับ Back-end API และใช้ **Child Process** ในการรันสคริปต์ Python เพื่อดึงข้อมูลจาก DW และส่งต่อให้ AI |
+| **AI** | **OpenAI API (ChatGPT)** | ใช้สำหรับสร้างสรุปรายงาน (Summary Report) และคำแนะนำทางธุรกิจแบบอัตโนมัติ |
+
 # 📦 E-commerce Dataset Samples
 
 This repository contains **sample datasets** from e-commerce transactions, featuring thousands of records in total. All datasets were extracted using the **Bright Data API**.
